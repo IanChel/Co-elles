@@ -1,11 +1,13 @@
-import { View, Text, StyleSheet } from 'react-native';
-import { Button } from 'react-native-paper';
+import React from 'react';
+import { View, StyleSheet, ScrollView } from 'react-native';
+import { Text, Button, Avatar, Card, Divider } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { COLORS, SPACING, FONT_SIZES } from '../../constants/theme';
 import { useRouter } from 'expo-router';
 
 export default function ProfileScreen() {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -14,36 +16,143 @@ export default function ProfileScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>👤 Mon Profil</Text>
-      <Text style={styles.subtitle}>En construction...</Text>
+    <ScrollView contentContainerStyle={styles.container}>
+      <View style={styles.header}>
+        <Avatar.Icon size={80} icon="account" style={styles.avatar} color="#FFF" />
+        <Text style={styles.name}>{user?.firstName} {user?.lastName}</Text>
+        {user?.isKYCVerified ? (
+          <View style={styles.badgeContainer}>
+            <MaterialCommunityIcons name="check-decagram" size={20} color={COLORS.success} />
+            <Text style={styles.badgeText}>Profil Vérifié</Text>
+          </View>
+        ) : (
+          <View style={styles.badgeContainer}>
+            <MaterialCommunityIcons name="alert-circle-outline" size={20} color={COLORS.error} />
+            <Text style={[styles.badgeText, { color: COLORS.error }]}>Non vérifié</Text>
+          </View>
+        )}
+      </View>
 
-      <Button mode="contained" onPress={handleLogout} style={styles.logoutButton}>
-        Se déconnecter
-      </Button>
-    </View>
+      <Card style={styles.infoCard}>
+        <Card.Content>
+          <View style={styles.infoRow}>
+            <MaterialCommunityIcons name="email-outline" size={24} color={COLORS.primary} />
+            <View style={styles.infoTextContainer}>
+              <Text style={styles.infoLabel}>Adresse Email</Text>
+              <Text style={styles.infoValue}>{user?.email}</Text>
+            </View>
+          </View>
+          
+          <Divider style={styles.divider} />
+
+          <View style={styles.infoRow}>
+            <MaterialCommunityIcons name="phone-outline" size={24} color={COLORS.primary} />
+            <View style={styles.infoTextContainer}>
+              <Text style={styles.infoLabel}>Numéro de téléphone</Text>
+              <Text style={styles.infoValue}>{user?.phone || 'Non renseigné'}</Text>
+            </View>
+          </View>
+        </Card.Content>
+      </Card>
+
+      <View style={styles.actionsContainer}>
+        <Button 
+          mode="outlined" 
+          icon="shield-check-outline" 
+          onPress={() => router.push('/(auth)/kyc')}
+          style={styles.actionButton}
+          textColor={COLORS.primary}
+        >
+          Refaire la vérification KYC
+        </Button>
+
+        <Button 
+          mode="contained" 
+          icon="logout" 
+          onPress={handleLogout} 
+          style={styles.logoutButton}
+          buttonColor={COLORS.error}
+        >
+          Se déconnecter
+        </Button>
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexGrow: 1,
     backgroundColor: COLORS.background,
   },
-  title: {
-    fontSize: FONT_SIZES.title,
-    fontWeight: 'bold',
-    color: COLORS.primary,
+  header: {
+    alignItems: 'center',
+    padding: SPACING.xl,
+    paddingTop: 80,
+    backgroundColor: COLORS.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  avatar: {
+    backgroundColor: COLORS.primary,
     marginBottom: SPACING.md,
   },
-  subtitle: {
-    fontSize: FONT_SIZES.body,
+  name: {
+    fontSize: FONT_SIZES.hero,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    marginBottom: SPACING.xs,
+  },
+  badgeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.success + '22',
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 4,
+    borderRadius: 16,
+    marginTop: SPACING.xs,
+  },
+  badgeText: {
+    color: COLORS.success,
+    fontWeight: 'bold',
+    marginLeft: 4,
+    fontSize: 12,
+  },
+  infoCard: {
+    margin: SPACING.lg,
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    elevation: 2,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: SPACING.sm,
+  },
+  infoTextContainer: {
+    marginLeft: SPACING.md,
+  },
+  infoLabel: {
+    fontSize: 12,
     color: COLORS.textSecondary,
-    marginBottom: SPACING.xl,
+  },
+  infoValue: {
+    fontSize: FONT_SIZES.body,
+    color: COLORS.text,
+    fontWeight: 'bold',
+  },
+  divider: {
+    marginVertical: SPACING.sm,
+  },
+  actionsContainer: {
+    padding: SPACING.lg,
+    marginTop: 'auto', // Pousse les boutons vers le bas
+  },
+  actionButton: {
+    marginBottom: SPACING.md,
+    borderColor: COLORS.primary,
   },
   logoutButton: {
-    backgroundColor: COLORS.error,
+    borderRadius: 8,
   }
 });

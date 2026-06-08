@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Dimensions, Alert } from 'react-native';
+import { View, StyleSheet, Dimensions, Alert, Share } from 'react-native';
 import { Text, Button, ActivityIndicator, Snackbar, Card } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
+import * as Clipboard from 'expo-clipboard';
 import api from '../../services/api';
 import { COLORS, SPACING, FONT_SIZES } from '../../constants/theme';
 
@@ -33,6 +34,25 @@ export default function SOSScreen() {
       }
     })();
   }, []);
+
+  const copyToClipboard = async () => {
+    if (location) {
+      await Clipboard.setStringAsync(`${location.latitude}, ${location.longitude}`);
+      Alert.alert("Position copiée !", "Les coordonnées ont été copiées dans le presse-papiers.");
+    }
+  };
+
+  const handleShare = async () => {
+    if (location) {
+      try {
+        await Share.share({
+          message: `📍 Je suis ici ! Voici ma position exacte :\nLatitude: ${location.latitude}\nLongitude: ${location.longitude}\n\nLien Maps: https://www.google.com/maps/search/?api=1&query=${location.latitude},${location.longitude}`,
+        });
+      } catch (error) {
+        Alert.alert("Erreur", "Impossible de partager la position.");
+      }
+    }
+  };
 
   const handleSOS = async () => {
     if (!location) {
@@ -88,6 +108,27 @@ export default function SOSScreen() {
                 <Text style={styles.coordsTitle}>Position détectée et prête à être envoyée :</Text>
                 <Text style={styles.coordsText}>Latitude: {location.latitude.toFixed(5)}</Text>
                 <Text style={styles.coordsText}>Longitude: {location.longitude.toFixed(5)}</Text>
+                
+                <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginTop: SPACING.md }}>
+                  <Button 
+                    icon="content-copy" 
+                    mode="outlined" 
+                    onPress={copyToClipboard}
+                    textColor={COLORS.primary}
+                    style={{ flex: 1, marginRight: SPACING.xs, borderColor: COLORS.primary }}
+                  >
+                    Copier
+                  </Button>
+                  <Button 
+                    icon="share-variant" 
+                    mode="contained" 
+                    onPress={handleShare}
+                    buttonColor={COLORS.primary}
+                    style={{ flex: 1, marginLeft: SPACING.xs }}
+                  >
+                    Partager
+                  </Button>
+                </View>
               </Card.Content>
             </Card>
           </View>
