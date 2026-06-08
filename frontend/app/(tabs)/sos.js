@@ -108,27 +108,6 @@ export default function SOSScreen() {
                 <Text style={styles.coordsTitle}>Position détectée et prête à être envoyée :</Text>
                 <Text style={styles.coordsText}>Latitude: {location.latitude.toFixed(5)}</Text>
                 <Text style={styles.coordsText}>Longitude: {location.longitude.toFixed(5)}</Text>
-                
-                <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginTop: SPACING.md }}>
-                  <Button 
-                    icon="content-copy" 
-                    mode="outlined" 
-                    onPress={copyToClipboard}
-                    textColor={COLORS.primary}
-                    style={{ flex: 1, marginRight: SPACING.xs, borderColor: COLORS.primary }}
-                  >
-                    Copier
-                  </Button>
-                  <Button 
-                    icon="share-variant" 
-                    mode="contained" 
-                    onPress={handleShare}
-                    buttonColor={COLORS.primary}
-                    style={{ flex: 1, marginLeft: SPACING.xs }}
-                  >
-                    Partager
-                  </Button>
-                </View>
               </Card.Content>
             </Card>
           </View>
@@ -140,6 +119,29 @@ export default function SOSScreen() {
           En cas de danger, appuyez sur ce bouton. Votre position exacte sera immédiatement transmise à votre contact d'urgence et aux autorités.
         </Text>
         
+        {location && (
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: SPACING.lg }}>
+            <Button 
+              icon="content-copy" 
+              mode="outlined" 
+              onPress={copyToClipboard}
+              textColor={COLORS.primary}
+              style={{ flex: 1, marginRight: SPACING.sm, borderColor: COLORS.primary }}
+            >
+              Copier Position
+            </Button>
+            <Button 
+              icon="share-variant" 
+              mode="contained" 
+              onPress={handleShare}
+              buttonColor={COLORS.primary}
+              style={{ flex: 1, marginLeft: SPACING.sm }}
+            >
+              Partager Position
+            </Button>
+          </View>
+        )}
+
         <Button
           mode="contained"
           onPress={handleSOS}
