@@ -1,181 +1,193 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { TextInput, Button, HelperText } from 'react-native-paper';
+import { View, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { Text } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import api from '../../services/api';
-import { COLORS, SPACING, FONT_SIZES } from '../../constants/theme';
+import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
+import { SPACING, FONT_SIZES } from '../../constants/theme';
+import CustomInput from '../../components/CustomInput';
+import CustomButton from '../../components/CustomButton';
 
 export default function RegisterScreen() {
   const router = useRouter();
-  
+  const { register } = useAuth();
+  const { colors } = useTheme();
+
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [phone, setPhone] = useState('');
+  
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   const handleRegister = async () => {
-    if (!firstName || !lastName || !email || !password || !phone) {
-      setErrorMsg("Veuillez remplir tous les champs.");
+    if (!firstName || !lastName || !phone || !email || !password) {
+      setErrorMsg("Veuillez remplir tous les champs");
       return;
     }
-    setErrorMsg('');
-    setLoading(true);
     
+    setLoading(true);
+    setErrorMsg('');
+
     try {
-      const response = await api.post('/auth/register', {
-        firstName,
-        lastName,
-        email,
-        password,
-        phone
-      });
-      
-      // Si l'inscription réussit, on a un JWT, on redirige vers le KYC
-      if (response.data.token) {
-        // Optionnel : on pourrait connecter l'utilisateur ici via AuthContext
-        // mais le flow demande de passer au KYC d'abord.
-        router.push('/(auth)/kyc');
-      }
+      await register(email, password, { firstName, lastName, phone });
+      router.replace('/(tabs)/home');
     } catch (error) {
-      if (error.response && error.response.status === 400) {
-        setErrorMsg("Données invalides ou utilisateur existant.");
-      } else {
-        setErrorMsg("Erreur lors de l'inscription. Le serveur est-il allumé ?");
-      }
+      setErrorMsg("Une erreur est survenue lors de l'inscription");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-      <View style={styles.container}>
-        <Text style={styles.logo}>🚗 Co-Elles</Text>
-        <Text style={styles.subtitle}>Rejoignez la communauté</Text>
+    <KeyboardAvoidingView 
+      style={[styles.container, { backgroundColor: colors.background }]} 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        
+        {/* LOGO AREA */}
+        <View style={styles.logoContainer}>
+          <View style={[styles.iconWrapper, { backgroundColor: colors.primaryLight }]}>
+            <MaterialCommunityIcons name="shield-account" size={50} color={colors.primary} />
+          </View>
+          <Text style={[styles.appName, { color: colors.text, fontFamily: 'Inter_700Bold' }]}>
+            Rejoignez-nous
+          </Text>
+          <Text style={[styles.tagline, { color: colors.textSecondary, fontFamily: 'Inter_400Regular' }]}>
+            Créez votre compte en 2 minutes.
+          </Text>
+        </View>
 
+        {/* FORM AREA */}
         <View style={styles.formContainer}>
-          <TextInput
-            label="Prénom"
-            value={firstName}
-            onChangeText={setFirstName}
-            mode="outlined"
-            style={styles.input}
-            theme={{ colors: { primary: COLORS.primary } }}
-          />
-          <TextInput
-            label="Nom"
-            value={lastName}
-            onChangeText={setLastName}
-            mode="outlined"
-            style={styles.input}
-            theme={{ colors: { primary: COLORS.primary } }}
-          />
-          <TextInput
-            label="Numéro de téléphone"
+          {errorMsg ? <Text style={[styles.errorText, { color: colors.error }]}>{errorMsg}</Text> : null}
+
+          <View style={styles.row}>
+            <View style={styles.flex1}>
+              <CustomInput
+                icon="account-outline"
+                placeholder="Prénom"
+                value={firstName}
+                onChangeText={setFirstName}
+                autoCapitalize="words"
+              />
+            </View>
+            <View style={{ width: SPACING.md }} />
+            <View style={styles.flex1}>
+              <CustomInput
+                placeholder="Nom"
+                value={lastName}
+                onChangeText={setLastName}
+                autoCapitalize="words"
+              />
+            </View>
+          </View>
+
+          <CustomInput
+            icon="phone-outline"
+            placeholder="Numéro de téléphone"
             value={phone}
             onChangeText={setPhone}
-            mode="outlined"
             keyboardType="phone-pad"
-            style={styles.input}
-            theme={{ colors: { primary: COLORS.primary } }}
           />
-          <TextInput
-            label="Email"
+
+          <CustomInput
+            icon="email-outline"
+            placeholder="Adresse email"
             value={email}
             onChangeText={setEmail}
-            mode="outlined"
             keyboardType="email-address"
-            autoCapitalize="none"
-            style={styles.input}
-            theme={{ colors: { primary: COLORS.primary } }}
           />
-          <TextInput
-            label="Mot de passe"
+
+          <CustomInput
+            icon="lock-outline"
+            placeholder="Mot de passe"
             value={password}
             onChangeText={setPassword}
-            mode="outlined"
             secureTextEntry
-            style={styles.input}
-            theme={{ colors: { primary: COLORS.primary } }}
           />
 
-          {errorMsg ? (
-            <HelperText type="error" visible={!!errorMsg} style={styles.errorText}>
-              {errorMsg}
-            </HelperText>
-          ) : null}
+          <CustomButton 
+            title="Créer mon compte" 
+            onPress={handleRegister} 
+            loading={loading} 
+            style={{ marginTop: SPACING.md }}
+          />
 
-          <Button
-            mode="contained"
-            onPress={handleRegister}
-            loading={loading}
-            disabled={loading}
-            style={styles.button}
-            contentStyle={styles.buttonContent}
-            buttonColor={COLORS.primary}
-          >
-            S'inscrire
-          </Button>
-
-          <Button
-            mode="text"
-            onPress={() => router.push('/(auth)/login')}
-            style={styles.linkButton}
-            textColor={COLORS.primary}
-          >
-            Déjà un compte ? Se connecter
-          </Button>
         </View>
-      </View>
-    </ScrollView>
+
+        {/* FOOTER */}
+        <View style={styles.footer}>
+          <Text style={[styles.footerText, { color: colors.textSecondary }]}>Déjà membre ? </Text>
+          <TouchableOpacity onPress={() => router.push('/login')}>
+            <Text style={[styles.footerLink, { color: colors.primary, fontFamily: 'Inter_600SemiBold' }]}>
+              Se connecter
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  scrollContainer: {
-    flexGrow: 1,
-    backgroundColor: COLORS.background,
-  },
   container: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    padding: SPACING.xl,
     justifyContent: 'center',
-    padding: SPACING.lg,
-    paddingTop: 60, // Espace pour la status bar si besoin
   },
-  logo: {
-    fontSize: FONT_SIZES.hero,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-    textAlign: 'center',
-    marginBottom: SPACING.xs,
-  },
-  subtitle: {
-    fontSize: FONT_SIZES.body,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
+  logoContainer: {
+    alignItems: 'center',
     marginBottom: SPACING.xl,
   },
-  formContainer: {
-    width: '100%',
-  },
-  input: {
+  iconWrapper: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: SPACING.md,
-    backgroundColor: COLORS.surface,
   },
-  button: {
-    marginTop: SPACING.md,
-    borderRadius: 8,
+  appName: {
+    fontSize: FONT_SIZES.title,
+    marginBottom: SPACING.xs,
   },
-  buttonContent: {
-    paddingVertical: 8,
+  tagline: {
+    fontSize: FONT_SIZES.body,
   },
-  linkButton: {
-    marginTop: SPACING.md,
+  formContainer: {
+    marginBottom: SPACING.xl,
+  },
+  row: {
+    flexDirection: 'row',
+  },
+  flex1: {
+    flex: 1,
   },
   errorText: {
-    fontSize: 14,
-  }
+    textAlign: 'center',
+    marginBottom: SPACING.md,
+    fontFamily: 'Inter_500Medium',
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 'auto',
+    paddingTop: SPACING.xl,
+  },
+  footerText: {
+    fontSize: FONT_SIZES.body,
+    fontFamily: 'Inter_400Regular',
+  },
+  footerLink: {
+    fontSize: FONT_SIZES.body,
+  },
 });

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
+import { registerForPushNotificationsAsync } from '../services/pushNotifications';
 
 const AuthContext = createContext({});
 
@@ -22,6 +23,8 @@ export function AuthProvider({ children }) {
 
       if (token && userData) {
         setUser(JSON.parse(userData));
+        // Enregistrer pour les notifications push
+        setTimeout(() => registerForPushNotificationsAsync(), 1000);
       }
     } catch (error) {
       console.log('Erreur chargement auth:', error);
@@ -47,6 +50,7 @@ export function AuthProvider({ children }) {
       await AsyncStorage.setItem('userData', JSON.stringify(userData));
 
       setUser(userData);
+      setTimeout(() => registerForPushNotificationsAsync(), 1000);
       return { success: true };
     } catch (error) {
       const message =
@@ -66,6 +70,7 @@ export function AuthProvider({ children }) {
       await AsyncStorage.setItem('userData', JSON.stringify(userData));
 
       setUser(userData);
+      setTimeout(() => registerForPushNotificationsAsync(), 1000);
       return { success: true };
     } catch (error) {
       const message =
@@ -85,6 +90,17 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // --- Rafraîchir les infos de l'utilisateur (notes, etc) ---
+  const refreshUser = async () => {
+    try {
+      const response = await api.get('/auth/me');
+      await AsyncStorage.setItem('userData', JSON.stringify(response.data));
+      setUser(response.data);
+    } catch (error) {
+      console.log('Erreur refreshUser:', error);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -93,6 +109,7 @@ export function AuthProvider({ children }) {
         login,
         register,
         logout,
+        refreshUser,
       }}
     >
       {children}

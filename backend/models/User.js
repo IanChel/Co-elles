@@ -35,9 +35,21 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    expoPushToken: {
+      type: String,
+      default: '',
+    },
     emergencyContact: {
       name: { type: String, default: '' },
       phone: { type: String, default: '' },
+    },
+    averageRating: {
+      type: Number,
+      default: 0,
+    },
+    ratingCount: {
+      type: Number,
+      default: 0,
     },
   },
   {

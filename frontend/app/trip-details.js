@@ -69,6 +69,20 @@ export default function TripDetailsScreen() {
     );
   };
 
+  const handleContact = async () => {
+    try {
+      const res = await api.post('/messages/conversations', {
+        recipientId: trip.driver._id,
+        tripId: id,
+      });
+      const driverName = `${trip.driver.firstName} ${trip.driver.lastName}`;
+      router.push(`/chat?conversationId=${res.data._id}&recipientName=${driverName}`);
+    } catch (error) {
+      Alert.alert('Erreur', 'Impossible d\'ouvrir la conversation.');
+      console.log(error);
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.center}>
@@ -155,10 +169,24 @@ export default function TripDetailsScreen() {
               </View>
               <Text style={styles.driverEmail}>{trip.driver?.email}</Text>
               {trip.driver?.phone ? (
-                <Text style={styles.driverPhone}>📞 {trip.driver.phone}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <MaterialCommunityIcons name="phone" size={16} color={COLORS.primary} />
+                  <Text style={[styles.driverPhone, { marginLeft: 4 }]}>{trip.driver.phone}</Text>
+                </View>
               ) : null}
             </View>
           </View>
+          {!isDriver && (
+            <Button
+              mode="outlined"
+              icon="chat"
+              onPress={handleContact}
+              textColor={COLORS.primary}
+              style={{ marginTop: SPACING.md, borderColor: COLORS.primary }}
+            >
+              Contacter la conductrice
+            </Button>
+          )}
         </Card.Content>
       </Card>
 

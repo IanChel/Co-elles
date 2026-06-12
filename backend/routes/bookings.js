@@ -70,6 +70,20 @@ router.post('/', async (req, res) => {
     await booking.populate('trip');
     await booking.populate('passenger', 'firstName lastName');
 
+    // 10. Envoyer une notification push à la conductrice
+    const driverUser = await require('../models/User').findById(trip.driver);
+    if (driverUser && driverUser.expoPushToken) {
+      const { sendPushNotifications } = require('../services/notifications');
+      await sendPushNotifications([
+        {
+          to: driverUser.expoPushToken,
+          title: 'Nouvelle réservation ! 🎉',
+          body: `${req.user.firstName} a réservé une place pour votre trajet ${trip.departureCity} ➡️ ${trip.arrivalCity}.`,
+          data: { url: '/(tabs)/my-trips' }, // Pour la navigation au tap
+        },
+      ]);
+    }
+
     res.status(201).json({
       message: 'Réservation confirmée ! 🎉',
       booking,

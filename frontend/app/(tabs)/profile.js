@@ -1,14 +1,27 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, Button, Avatar, Card, Divider } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { COLORS, SPACING, FONT_SIZES } from '../../constants/theme';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
+import api from '../../services/api';
 
 export default function ProfileScreen() {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const router = useRouter();
+  const [tripCount, setTripCount] = useState('-');
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshUser();
+      
+      // Récupérer le nombre de trajets proposés
+      api.get('/bookings/my-trips')
+        .then(res => setTripCount(res.data.length))
+        .catch(() => setTripCount(0));
+    }, [])
+  );
 
   const handleLogout = async () => {
     await logout();
@@ -31,6 +44,20 @@ export default function ProfileScreen() {
             <Text style={[styles.badgeText, { color: COLORS.error }]}>Non vérifié</Text>
           </View>
         )}
+      </View>
+
+      <View style={styles.statsContainer}>
+        <View style={styles.statBox}>
+          <MaterialCommunityIcons name="star" size={28} color={COLORS.accent} />
+          <Text style={styles.statValue}>{user?.averageRating ? user.averageRating.toFixed(1) : '5.0'}</Text>
+          <Text style={styles.statLabel}>{user?.ratingCount || 0} avis</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statBox}>
+          <MaterialCommunityIcons name="car" size={28} color={COLORS.primary} />
+          <Text style={styles.statValue}>{tripCount}</Text>
+          <Text style={styles.statLabel}>Trajets</Text>
+        </View>
       </View>
 
       <Card style={styles.infoCard}>
@@ -117,6 +144,36 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 4,
     fontSize: 12,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.surface,
+    marginHorizontal: SPACING.lg,
+    marginTop: SPACING.lg,
+    borderRadius: 12,
+    padding: SPACING.md,
+    elevation: 2,
+    justifyContent: 'space-around',
+    alignItems: 'center',
+  },
+  statBox: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: COLORS.border,
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    marginTop: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
   },
   infoCard: {
     margin: SPACING.lg,

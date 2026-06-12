@@ -1,27 +1,60 @@
+import { useEffect } from 'react';
 import { Stack } from 'expo-router';
-import { PaperProvider, MD3LightTheme } from 'react-native-paper';
+import { PaperProvider, MD3LightTheme, MD3DarkTheme } from 'react-native-paper';
 import { AuthProvider } from '../context/AuthContext';
-import { COLORS } from '../constants/theme';
+import { ThemeProvider, useTheme } from '../context/ThemeContext';
+import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
+import * as SplashScreen from 'expo-splash-screen';
 
-// --- Thème React Native Paper personnalisé ---
-const paperTheme = {
-  ...MD3LightTheme,
-  colors: {
-    ...MD3LightTheme.colors,
-    primary: COLORS.primary,
-    secondary: COLORS.accent,
-    background: COLORS.background,
-    surface: COLORS.surface,
-    error: COLORS.error,
-  },
-};
+SplashScreen.preventAutoHideAsync();
+
+function PaperThemeWrapper({ children }) {
+  const { isDarkMode, colors } = useTheme();
+
+  const paperTheme = {
+    ...(isDarkMode ? MD3DarkTheme : MD3LightTheme),
+    colors: {
+      ...(isDarkMode ? MD3DarkTheme.colors : MD3LightTheme.colors),
+      primary: colors.primary,
+      secondary: colors.accent,
+      background: colors.background,
+      surface: colors.surface,
+      error: colors.error,
+    }
+  };
+
+  return <PaperProvider theme={paperTheme}>{children}</PaperProvider>;
+}
+
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 export default function RootLayout() {
+  const [fontsLoaded, fontError] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded || fontError) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded, fontError]);
+
+  if (!fontsLoaded && !fontError) {
+    return null;
+  }
+
   return (
-    <AuthProvider>
-      <PaperProvider theme={paperTheme}>
-        <Stack screenOptions={{ headerShown: false }} />
-      </PaperProvider>
-    </AuthProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider>
+        <AuthProvider>
+          <PaperThemeWrapper>
+            <Stack screenOptions={{ headerShown: false }} />
+          </PaperThemeWrapper>
+        </AuthProvider>
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }

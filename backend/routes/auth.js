@@ -18,8 +18,8 @@ router.post('/register', async (req, res) => {
   try {
     const { firstName, lastName, email, password, phone } = req.body;
 
-    // Vérifier si l'email est déjà utilisé
-    const existingUser = await User.findOne({ email });
+    // Vérifier si l'email est déjà utilisé (en ignorant la casse)
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
       return res.status(400).json({ message: 'Cet email est déjà utilisé' });
     }
@@ -40,9 +40,15 @@ router.post('/register', async (req, res) => {
       email: user.email,
       phone: user.phone,
       isKYCVerified: user.isKYCVerified,
+      averageRating: user.averageRating,
+      ratingCount: user.ratingCount,
       token: generateToken(user._id),
     });
   } catch (error) {
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(val => val.message);
+      return res.status(400).json({ message: messages.join(', ') });
+    }
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }
 });
@@ -75,6 +81,8 @@ router.post('/login', async (req, res) => {
       email: user.email,
       phone: user.phone,
       isKYCVerified: user.isKYCVerified,
+      averageRating: user.averageRating,
+      ratingCount: user.ratingCount,
       token: generateToken(user._id),
     });
   } catch (error) {

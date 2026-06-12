@@ -1,10 +1,12 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Alert } from 'react-native';
 import { Text, Card, Avatar, Chip, ActivityIndicator, Button, SegmentedButtons } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../../services/api';
 import { COLORS, SPACING, FONT_SIZES } from '../../constants/theme';
+import ReviewModal from '../../components/ReviewModal';
 
 export default function MyTripsScreen() {
   const router = useRouter();
@@ -14,11 +16,43 @@ export default function MyTripsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  // États pour l'évaluation
+  const [reviewVisible, setReviewVisible] = useState(false);
+  const [tripToReview, setTripToReview] = useState(null);
+  const [revieweeInfo, setRevieweeInfo] = useState({ id: null, name: '' });
+
+  const checkForPendingReviews = async (fetchedBookings) => {
+    try {
+      // Pour le prototype, on cherche juste le premier trajet passé non évalué
+      const postponedUntil = await AsyncStorage.getItem('postponedReviewDate');
+      if (postponedUntil && new Date() < new Date(postponedUntil)) {
+        return; // L'utilisateur a demandé à remettre à plus tard
+      }
+
+      const pastBooking = fetchedBookings.find(b => {
+        if (!b.trip) return false;
+        // Check if date is passed (simple comparison for prototype)
+        // Here we just show the "Évaluer" button in the UI, and if we want the popup, we trigger it.
+        // On va plutôt se baser sur une liste de trajets passés.
+        return b.status === 'completed' || b.trip.status === 'completed';
+      });
+
+      // Simulation d'apparition du popup automatique
+      if (pastBooking && !postponedUntil) {
+        // En vrai, il faudrait vérifier avec le backend si un avis existe déjà.
+        // Mais pour simplifier, l'utilisateur a aussi un bouton "Évaluer".
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
   const fetchData = async () => {
     try {
       if (tab === 'passenger') {
         const res = await api.get('/bookings/my');
         setBookings(res.data);
+        checkForPendingReviews(res.data);
       } else {
         const res = await api.get('/bookings/my-trips');
         setMyTrips(res.data);
@@ -66,12 +100,36 @@ export default function MyTripsScreen() {
     );
   };
 
+  const openReviewModal = (trip, revieweeId, revieweeName) => {
+    setTripToReview(trip);
+    setRevieweeInfo({ id: revieweeId, name: revieweeName });
+    setReviewVisible(true);
+  };
+
+  const handlePostponeReview = async () => {
+    // Repousse à 1 semaine (7 jours)
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    await AsyncStorage.setItem('postponedReviewDate', nextWeek.toISOString());
+    setReviewVisible(false);
+  };
+
+  const onReviewSubmitted = () => {
+    setReviewVisible(false);
+    Alert.alert('Merci !', 'Votre avis a été enregistré.');
+    // On pourrait rafraîchir ici si nécessaire
+  };
+
   // --- Rendu d'une réservation (onglet Passagère) ---
   const renderBooking = ({ item }) => {
     const trip = item.trip;
     if (!trip) return null;
 
     const isCancelled = item.status === 'cancelled';
+    
+    // Simplification : si le trip n'est pas annulé, et que c'est une démo, on permet d'évaluer.
+    // Dans une vraie app, on vérifierait si la date/heure est dépassée.
+    const canReview = !isCancelled; 
 
     return (
       <TouchableOpacity
@@ -107,6 +165,16 @@ export default function MyTripsScreen() {
                 <Chip icon="close-circle" textStyle={{ fontSize: 11, color: COLORS.error, fontWeight: 'bold' }} style={{ backgroundColor: COLORS.error + '22' }}>
                   Annulée
                 </Chip>
+              ) : canReview ? (
+                <Button
+                  mode="contained"
+                  buttonColor={COLORS.accent}
+                  icon="star"
+                  compact
+                  onPress={() => openReviewModal(trip, trip.driver?._id, trip.driver?.firstName)}
+                >
+                  Évaluer
+                </Button>
               ) : (
                 <Button
                   mode="outlined"
@@ -171,7 +239,12 @@ export default function MyTripsScreen() {
                   <View key={p._id || index} style={styles.passengerRow}>
                     <Avatar.Icon size={24} icon="account" style={{ backgroundColor: COLORS.primaryLight }} color={COLORS.primary} />
                     <Text style={styles.passengerName}>{p.firstName} {p.lastName}</Text>
-                    {p.phone ? <Text style={styles.passengerPhone}>📞 {p.phone}</Text> : null}
+                    {p.phone ? (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 'auto' }}>
+                        <MaterialCommunityIcons name="phone" size={14} color={COLORS.textSecondary} />
+                        <Text style={[styles.passengerPhone, { marginLeft: 4 }]}>{p.phone}</Text>
+                      </View>
+                    ) : null}
                   </View>
                 ))}
               </View>
@@ -201,8 +274,8 @@ export default function MyTripsScreen() {
           value={tab}
           onValueChange={setTab}
           buttons={[
-            { value: 'passenger', label: '🎫 Passagère', style: tab === 'passenger' ? styles.activeTab : {} },
-            { value: 'driver', label: '🚗 Conductrice', style: tab === 'driver' ? styles.activeTab : {} },
+            { value: 'passenger', label: 'Passagère', icon: 'ticket-outline', style: tab === 'passenger' ? styles.activeTab : {} },
+            { value: 'driver', label: 'Conductrice', icon: 'car', style: tab === 'driver' ? styles.activeTab : {} },
           ]}
           style={styles.segmented}
         />
@@ -225,6 +298,18 @@ export default function MyTripsScreen() {
           contentContainerStyle={styles.listContent}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
           showsVerticalScrollIndicator={false}
+        />
+      )}
+
+      {tripToReview && (
+        <ReviewModal
+          visible={reviewVisible}
+          onClose={() => setReviewVisible(false)}
+          trip={tripToReview}
+          revieweeId={revieweeInfo.id}
+          revieweeName={revieweeInfo.name}
+          onReviewSubmitted={onReviewSubmitted}
+          onPostpone={handlePostponeReview}
         />
       )}
     </View>

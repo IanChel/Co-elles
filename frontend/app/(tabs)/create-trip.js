@@ -1,206 +1,225 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
-import { TextInput, Button, Text, HelperText } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, Platform, KeyboardAvoidingView, TouchableOpacity } from 'react-native';
+import { Text } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import api from '../../services/api';
-import { COLORS, SPACING, FONT_SIZES } from '../../constants/theme';
+import { useTheme } from '../../context/ThemeContext';
+import { SPACING, FONT_SIZES, BORDER_RADIUS, SHADOWS } from '../../constants/theme';
+import CustomInput from '../../components/CustomInput';
+import CustomButton from '../../components/CustomButton';
+import SOSFloatingButton from '../../components/SOSFloatingButton';
 
 export default function CreateTripScreen() {
   const router = useRouter();
+  const { colors, isDarkMode } = useTheme();
 
-  const [departureCity, setDepartureCity] = useState('');
-  const [arrivalCity, setArrivalCity] = useState('');
+  const [departure, setDeparture] = useState('');
+  const [arrival, setArrival] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [seats, setSeats] = useState('3');
   const [price, setPrice] = useState('15');
-  
-  const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
-  const [successMsg, setSuccessMsg] = useState(false);
 
-  const handleCreateTrip = async () => {
-    if (!departureCity || !arrivalCity || !date || !time || !seats || !price) {
-      setErrorMsg("Veuillez remplir tous les champs.");
-      return;
-    }
-    setErrorMsg('');
-    setLoading(true);
-    setSuccessMsg(false);
-
-    try {
-      await api.post('/trips', {
-        departureCity,
-        arrivalCity,
-        date,
-        time,
-        seats: parseInt(seats, 10),
-        price: parseFloat(price)
-      });
-      
-      setSuccessMsg(true);
-      // Réinitialiser le formulaire
-      setDepartureCity('');
-      setArrivalCity('');
-      setDate('');
-      setTime('');
-      
-      // Rediriger vers l'accueil après 2 secondes
-      setTimeout(() => {
-        router.push('/(tabs)/home');
-      }, 2000);
-
-    } catch (error) {
-      setErrorMsg("Erreur lors de la création du trajet. Vérifiez votre connexion.");
-      console.log(error);
-    } finally {
-      setLoading(false);
-    }
+  const handlePublish = () => {
+    // Redirection après publication
+    router.push('/(tabs)/home');
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-      <Text style={styles.title}>Proposer un trajet</Text>
-      <Text style={styles.subtitle}>Partagez votre route en toute sécurité avec d'autres femmes.</Text>
-
-      <View style={styles.formCard}>
-        <TextInput
-          label="Ville de départ"
-          value={departureCity}
-          onChangeText={setDepartureCity}
-          mode="outlined"
-          style={styles.input}
-          left={<TextInput.Icon icon="map-marker" color={COLORS.primary} />}
-          theme={{ colors: { primary: COLORS.primary } }}
-        />
-
-        <TextInput
-          label="Ville d'arrivée"
-          value={arrivalCity}
-          onChangeText={setArrivalCity}
-          mode="outlined"
-          style={styles.input}
-          left={<TextInput.Icon icon="flag-checkered" color={COLORS.accent} />}
-          theme={{ colors: { primary: COLORS.primary } }}
-        />
-
-        <View style={styles.row}>
-          <TextInput
-            label="Date (ex: 16/06)"
-            value={date}
-            onChangeText={setDate}
-            mode="outlined"
-            style={[styles.input, { flex: 1, marginRight: SPACING.sm }]}
-            left={<TextInput.Icon icon="calendar" />}
-            theme={{ colors: { primary: COLORS.primary } }}
-          />
-          <TextInput
-            label="Heure (ex: 08:30)"
-            value={time}
-            onChangeText={setTime}
-            mode="outlined"
-            style={[styles.input, { flex: 1, marginLeft: SPACING.sm }]}
-            left={<TextInput.Icon icon="clock-outline" />}
-            theme={{ colors: { primary: COLORS.primary } }}
-          />
+    <KeyboardAvoidingView 
+      style={[styles.container, { backgroundColor: colors.background }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        
+        {/* HEADER */}
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: colors.text }]}>Proposer un trajet</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Partagez votre route en toute sécurité avec d'autres femmes.</Text>
         </View>
 
-        <View style={styles.row}>
-          <TextInput
-            label="Places (1-4)"
-            value={seats}
-            onChangeText={setSeats}
-            keyboardType="numeric"
-            mode="outlined"
-            style={[styles.input, { flex: 1, marginRight: SPACING.sm }]}
-            left={<TextInput.Icon icon="seat-passenger" />}
-            theme={{ colors: { primary: COLORS.primary } }}
-          />
-          <TextInput
-            label="Prix total (€)"
-            value={price}
-            onChangeText={setPrice}
-            keyboardType="numeric"
-            mode="outlined"
-            style={[styles.input, { flex: 1, marginLeft: SPACING.sm }]}
-            left={<TextInput.Icon icon="currency-eur" />}
-            theme={{ colors: { primary: COLORS.primary } }}
-          />
+        {/* TRIP CARD */}
+        <View style={[
+          styles.card, 
+          { backgroundColor: colors.surface },
+          !isDarkMode && SHADOWS.light
+        ]}>
+          
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Itinéraire</Text>
+
+          <View style={styles.inputWrapper}>
+            <View style={styles.timeline}>
+              <View style={[styles.timelineDot, { borderColor: colors.primary }]} />
+              <View style={[styles.timelineLine, { backgroundColor: colors.border }]} />
+              <View style={[styles.timelineDot, { backgroundColor: colors.primary, borderColor: colors.primary }]} />
+            </View>
+            
+            <View style={styles.inputs}>
+              <CustomInput
+                placeholder="Ville de départ"
+                value={departure}
+                onChangeText={setDeparture}
+                style={styles.transparentInput}
+              />
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
+              <CustomInput
+                placeholder="Ville d'arrivée"
+                value={arrival}
+                onChangeText={setArrival}
+                style={styles.transparentInput}
+              />
+            </View>
+          </View>
+
         </View>
 
-        {errorMsg ? (
-          <HelperText type="error" visible={!!errorMsg} style={styles.feedbackText}>
-            {errorMsg}
-          </HelperText>
-        ) : null}
+        {/* DATE & TIME CARD */}
+        <View style={[
+          styles.card, 
+          { backgroundColor: colors.surface },
+          !isDarkMode && SHADOWS.light
+        ]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Horaire</Text>
+          <View style={styles.row}>
+            <View style={{ flex: 1, marginRight: SPACING.sm }}>
+              <CustomInput
+                icon="calendar-month-outline"
+                placeholder="Date"
+                value={date}
+                onChangeText={setDate}
+                style={{ marginBottom: 0 }}
+              />
+            </View>
+            <View style={{ flex: 1, marginLeft: SPACING.sm }}>
+              <CustomInput
+                icon="clock-outline"
+                placeholder="Heure"
+                value={time}
+                onChangeText={setTime}
+                style={{ marginBottom: 0 }}
+              />
+            </View>
+          </View>
+        </View>
 
-        {successMsg ? (
-          <HelperText type="info" visible={successMsg} style={[styles.feedbackText, { color: COLORS.success }]}>
-            Trajet publié avec succès ! Redirection...
-          </HelperText>
-        ) : null}
+        {/* DETAILS CARD */}
+        <View style={[
+          styles.card, 
+          { backgroundColor: colors.surface },
+          !isDarkMode && SHADOWS.light
+        ]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Détails</Text>
+          <View style={styles.row}>
+            <View style={{ flex: 1, marginRight: SPACING.sm }}>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Places libres</Text>
+              <CustomInput
+                icon="seat-passenger"
+                placeholder="3"
+                value={seats}
+                onChangeText={setSeats}
+                keyboardType="numeric"
+                style={{ marginBottom: 0 }}
+              />
+            </View>
+            <View style={{ flex: 1, marginLeft: SPACING.sm }}>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Prix par place</Text>
+              <CustomInput
+                icon="currency-eur"
+                placeholder="15"
+                value={price}
+                onChangeText={setPrice}
+                keyboardType="numeric"
+                style={{ marginBottom: 0 }}
+              />
+            </View>
+          </View>
+        </View>
 
-        <Button
-          mode="contained"
-          onPress={handleCreateTrip}
-          loading={loading}
-          disabled={loading || successMsg}
-          style={styles.button}
-          contentStyle={styles.buttonContent}
-          buttonColor={COLORS.primary}
-        >
-          Publier le trajet
-        </Button>
-      </View>
-    </ScrollView>
+        <CustomButton 
+          title="Publier le trajet" 
+          onPress={handlePublish} 
+          style={{ marginTop: SPACING.xl, marginBottom: SPACING.xxl }}
+        />
+
+      </ScrollView>
+      
+      {/* Bouton SOS Flottant persistant */}
+      <SOSFloatingButton />
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
-    backgroundColor: COLORS.background,
-    padding: SPACING.lg,
+    flex: 1,
+  },
+  scrollContent: {
+    padding: SPACING.xl,
+    paddingTop: 60,
+  },
+  header: {
+    marginBottom: SPACING.xl,
   },
   title: {
-    fontSize: FONT_SIZES.title,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-    marginBottom: SPACING.xs,
+    fontSize: FONT_SIZES.hero,
+    fontFamily: 'Inter_700Bold',
   },
   subtitle: {
     fontSize: FONT_SIZES.body,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.xl,
+    fontFamily: 'Inter_400Regular',
+    marginTop: SPACING.xs,
+    lineHeight: 22,
   },
-  formCard: {
-    backgroundColor: COLORS.surface,
-    padding: SPACING.md,
-    borderRadius: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+  card: {
+    borderRadius: BORDER_RADIUS.xl,
+    padding: SPACING.lg,
+    marginBottom: SPACING.lg,
   },
-  input: {
+  sectionTitle: {
+    fontSize: FONT_SIZES.subtitle,
+    fontFamily: 'Inter_600SemiBold',
     marginBottom: SPACING.md,
-    backgroundColor: COLORS.surface,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+  },
+  timeline: {
+    width: 30,
+    alignItems: 'center',
+    paddingVertical: 20,
+    marginRight: SPACING.sm,
+  },
+  timelineDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    backgroundColor: 'transparent',
+  },
+  timelineLine: {
+    width: 2,
+    flex: 1,
+    marginVertical: 4,
+  },
+  inputs: {
+    flex: 1,
+  },
+  transparentInput: {
+    backgroundColor: 'transparent',
+    marginBottom: 0,
+    height: 50,
+  },
+  divider: {
+    height: 1,
+    marginVertical: SPACING.xs,
   },
   row: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
   },
-  button: {
-    marginTop: SPACING.sm,
-    borderRadius: 8,
-  },
-  buttonContent: {
-    paddingVertical: 8,
-  },
-  feedbackText: {
-    fontSize: 14,
-    marginBottom: SPACING.sm,
-    textAlign: 'center',
+  inputLabel: {
+    fontSize: 12,
+    fontFamily: 'Inter_500Medium',
+    marginBottom: 4,
+    marginLeft: 4,
   }
 });
