@@ -14,7 +14,7 @@ export default function FilterBottomSheet({ bottomSheetRef, initialFilters, onAp
   
   const [departure, setDeparture] = useState(initialFilters?.departure || '');
   const [arrival, setArrival] = useState(initialFilters?.arrival || '');
-  const [date, setDate] = useState(initialFilters?.date ? new Date(initialFilters.date) : new Date());
+  const [date, setDate] = useState(initialFilters?.date ? new Date(initialFilters.date) : null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [minSeats, setMinSeats] = useState(initialFilters?.minSeats || 1);
 
@@ -34,7 +34,7 @@ export default function FilterBottomSheet({ bottomSheetRef, initialFilters, onAp
     onApply({
       departure,
       arrival,
-      date: date.toISOString().split('T')[0],
+      date: date ? date.toISOString().split('T')[0] : null,
       minSeats
     });
     bottomSheetRef.current?.close();
@@ -43,7 +43,7 @@ export default function FilterBottomSheet({ bottomSheetRef, initialFilters, onAp
   const handleReset = () => {
     setDeparture('');
     setArrival('');
-    setDate(new Date());
+    setDate(null);
     setMinSeats(1);
     onApply({
       departure: '',
@@ -55,9 +55,12 @@ export default function FilterBottomSheet({ bottomSheetRef, initialFilters, onAp
   };
 
   const onDateChange = (event, selectedDate) => {
-    const currentDate = selectedDate || date;
-    setShowDatePicker(Platform.OS === 'ios');
-    setDate(currentDate);
+    if (Platform.OS !== 'ios') {
+      setShowDatePicker(false);
+    }
+    if (selectedDate) {
+      setDate(selectedDate);
+    }
   };
 
   return (
@@ -98,11 +101,19 @@ export default function FilterBottomSheet({ bottomSheetRef, initialFilters, onAp
         </View>
 
         {/* Date Picker */}
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Date de départ</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Date de départ</Text>
+          {date && (
+            <TouchableOpacity onPress={() => setDate(null)}>
+              <Text style={{ color: colors.error, fontSize: 12, marginTop: SPACING.lg }}>Effacer</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        
         {Platform.OS === 'ios' ? (
           <View style={styles.iosDatePicker}>
             <DateTimePicker
-              value={date}
+              value={date || new Date()}
               mode="date"
               display="default"
               onChange={onDateChange}
@@ -115,15 +126,15 @@ export default function FilterBottomSheet({ bottomSheetRef, initialFilters, onAp
             onPress={() => setShowDatePicker(true)}
           >
             <MaterialCommunityIcons name="calendar" size={24} color={colors.primary} />
-            <Text style={[styles.dateText, { color: colors.text }]}>
-              {date.toLocaleDateString('fr-FR')}
+            <Text style={[styles.dateText, { color: colors.text, opacity: date ? 1 : 0.5 }]}>
+              {date ? date.toLocaleDateString('fr-FR') : "N'importe quand"}
             </Text>
           </TouchableOpacity>
         )}
         
         {showDatePicker && Platform.OS !== 'ios' && (
           <DateTimePicker
-            value={date}
+            value={date || new Date()}
             mode="date"
             display="default"
             onChange={onDateChange}

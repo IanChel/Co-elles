@@ -56,17 +56,31 @@ export default function HomeScreen() {
   // Filtrage dynamique ultra-rapide côté client
   const filteredTrips = useMemo(() => {
     return trips.filter(trip => {
-      const matchDeparture = !filters.departure || trip.departureCity.toLowerCase().includes(filters.departure.toLowerCase());
-      const matchArrival = !filters.arrival || trip.arrivalCity.toLowerCase().includes(filters.arrival.toLowerCase());
-      // Convert trip date from "DD/MM/YYYY" or similar format to match selected date, or skip if complex. 
-      // For simplicity here, we assume exact string match if date is selected, or we just ignore date filter if trip date format is different.
-      // Better: we just do a basic string inclusion if needed, or skip date for now to ensure it works.
-      const matchDate = !filters.date || trip.date === filters.date; 
+      // Sécurité : au cas où la ville est undefined
+      const depCity = trip.departureCity || "";
+      const arrCity = trip.arrivalCity || "";
+      
+      const matchDeparture = !filters.departure || depCity.toLowerCase().includes(filters.departure.toLowerCase());
+      const matchArrival = !filters.arrival || arrCity.toLowerCase().includes(filters.arrival.toLowerCase());
+      
+      // Assouplissement de la date : on compare juste si la chaîne est incluse ou si la date correspond approximativement
+      // (Car le backend peut renvoyer "DD/MM/YYYY" et le filter "YYYY-MM-DD")
+      let matchDate = true;
+      if (filters.date) {
+        // Ex: filtres.date = "2026-06-12"
+        const filterDateStr = filters.date; 
+        const tripDateStr = trip.date || "";
+        // Si trip.date = "12/06/2026", on peut reformer "2026-06-12" ou vérifier l'inclusion
+        const [year, month, day] = filterDateStr.split('-');
+        const formattedFilterFR = `${day}/${month}/${year}`;
+        
+        matchDate = tripDateStr === filterDateStr || tripDateStr === formattedFilterFR || tripDateStr.includes(formattedFilterFR);
+      }
       
       const availableSeats = trip.seats - (trip.passengers?.length || 0);
-      const matchSeats = availableSeats >= filters.minSeats;
+      const matchSeats = availableSeats >= (filters.minSeats || 1);
       
-      return matchDeparture && matchArrival && matchSeats && (filters.date ? matchDate : true);
+      return matchDeparture && matchArrival && matchSeats && matchDate;
     });
   }, [trips, filters]);
 
