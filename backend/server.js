@@ -26,6 +26,7 @@ app.get('/', (req, res) => {
 // --- Montage des routes ---
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/trips', require('./routes/trips'));
+app.use('/api/bookings', require('./routes/bookings'));
 app.use('/api/sos', require('./routes/sos'));
 
 // --- Démarrage du serveur ---

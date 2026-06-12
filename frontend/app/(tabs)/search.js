@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, FlatList, Keyboard } from 'react-native';
+import { View, StyleSheet, FlatList, Keyboard, TouchableOpacity } from 'react-native';
 import { Text, TextInput, Button, Card, Avatar, Chip, ActivityIndicator } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import api from '../../services/api';
 import { COLORS, SPACING, FONT_SIZES } from '../../constants/theme';
 
 export default function SearchScreen() {
+  const router = useRouter();
   const [departureCity, setDepartureCity] = useState('');
   const [arrivalCity, setArrivalCity] = useState('');
   const [date, setDate] = useState('');
@@ -44,37 +46,39 @@ export default function SearchScreen() {
     const driverName = item.driver?.firstName || 'Conductrice';
 
     return (
-      <Card style={styles.tripCard} mode="elevated">
-        <Card.Content>
-          <View style={styles.tripHeader}>
-            <View style={styles.citiesContainer}>
-              <Text style={styles.cityText}>{item.departureCity}</Text>
-              <MaterialCommunityIcons name="arrow-right" size={20} color={COLORS.textSecondary} style={styles.arrow} />
-              <Text style={styles.cityText}>{item.arrivalCity}</Text>
+      <TouchableOpacity activeOpacity={0.8} onPress={() => router.push(`/trip-details?id=${item._id}`)}>
+        <Card style={styles.tripCard} mode="elevated">
+          <Card.Content>
+            <View style={styles.tripHeader}>
+              <View style={styles.citiesContainer}>
+                <Text style={styles.cityText}>{item.departureCity}</Text>
+                <MaterialCommunityIcons name="arrow-right" size={20} color={COLORS.textSecondary} style={styles.arrow} />
+                <Text style={styles.cityText}>{item.arrivalCity}</Text>
+              </View>
+              <Text style={styles.priceText}>{item.price} €</Text>
             </View>
-            <Text style={styles.priceText}>{item.price} €</Text>
-          </View>
 
-          <View style={styles.dateTimeContainer}>
-            <MaterialCommunityIcons name="calendar-clock" size={16} color={COLORS.primary} />
-            <Text style={styles.dateTimeText}>{item.date} à {item.time}</Text>
-          </View>
-
-          <View style={styles.tripFooter}>
-            <View style={styles.driverInfo}>
-              <Avatar.Icon size={32} icon="account" style={{ backgroundColor: COLORS.accent }} color="#FFF" />
-              <Text style={styles.driverName}>{driverName}</Text>
-              {item.driver?.isKYCVerified && (
-                <MaterialCommunityIcons name="check-decagram" size={16} color={COLORS.success} style={{ marginLeft: 4 }} />
-              )}
+            <View style={styles.dateTimeContainer}>
+              <MaterialCommunityIcons name="calendar-clock" size={16} color={COLORS.primary} />
+              <Text style={styles.dateTimeText}>{item.date} à {item.time}</Text>
             </View>
-            
-            <Chip icon="seat-passenger" textStyle={styles.chipText} style={[styles.seatsChip, availableSeats === 0 && { backgroundColor: COLORS.error + '33' }]}>
-              {availableSeats > 0 ? `${availableSeats} places libres` : 'Complet'}
-            </Chip>
-          </View>
-        </Card.Content>
-      </Card>
+
+            <View style={styles.tripFooter}>
+              <View style={styles.driverInfo}>
+                <Avatar.Icon size={32} icon="account" style={{ backgroundColor: COLORS.accent }} color="#FFF" />
+                <Text style={styles.driverName}>{driverName}</Text>
+                {item.driver?.isKYCVerified && (
+                  <MaterialCommunityIcons name="check-decagram" size={16} color={COLORS.success} style={{ marginLeft: 4 }} />
+                )}
+              </View>
+              
+              <Chip icon="seat-passenger" textStyle={styles.chipText} style={[styles.seatsChip, availableSeats === 0 && { backgroundColor: COLORS.error + '33' }]}>
+                {availableSeats > 0 ? `${availableSeats} places libres` : 'Complet'}
+              </Chip>
+            </View>
+          </Card.Content>
+        </Card>
+      </TouchableOpacity>
     );
   };
 

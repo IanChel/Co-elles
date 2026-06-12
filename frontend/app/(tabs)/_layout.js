@@ -45,6 +45,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="my-trips"
+        options={{
+          title: 'Mes Trajets',
+          tabBarIcon: ({ color }) => (
+            <MaterialCommunityIcons name="ticket-confirmation" size={24} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="sos"
         options={{
           title: 'SOS',

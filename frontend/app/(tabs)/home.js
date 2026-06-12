@@ -1,12 +1,13 @@
 import React, { useState, useCallback } from 'react';
-import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
+import { View, StyleSheet, FlatList, RefreshControl, TouchableOpacity } from 'react-native';
 import { Text, Card, Avatar, ActivityIndicator, Chip, Button } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import api from '../../services/api';
 import { COLORS, SPACING, FONT_SIZES } from '../../constants/theme';
 
 export default function HomeScreen() {
+  const router = useRouter();
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -43,40 +44,42 @@ export default function HomeScreen() {
     const driverName = item.driver?.firstName || 'Conductrice';
 
     return (
-      <Card style={styles.tripCard} mode="elevated">
-        <Card.Content>
-          {/* Header : Villes et Prix */}
-          <View style={styles.tripHeader}>
-            <View style={styles.citiesContainer}>
-              <Text style={styles.cityText}>{item.departureCity}</Text>
-              <MaterialCommunityIcons name="arrow-right" size={20} color={COLORS.textSecondary} style={styles.arrow} />
-              <Text style={styles.cityText}>{item.arrivalCity}</Text>
+      <TouchableOpacity activeOpacity={0.8} onPress={() => router.push(`/trip-details?id=${item._id}`)}>
+        <Card style={styles.tripCard} mode="elevated">
+          <Card.Content>
+            {/* Header : Villes et Prix */}
+            <View style={styles.tripHeader}>
+              <View style={styles.citiesContainer}>
+                <Text style={styles.cityText}>{item.departureCity}</Text>
+                <MaterialCommunityIcons name="arrow-right" size={20} color={COLORS.textSecondary} style={styles.arrow} />
+                <Text style={styles.cityText}>{item.arrivalCity}</Text>
+              </View>
+              <Text style={styles.priceText}>{item.price} €</Text>
             </View>
-            <Text style={styles.priceText}>{item.price} €</Text>
-          </View>
 
-          {/* Date et Heure */}
-          <View style={styles.dateTimeContainer}>
-            <MaterialCommunityIcons name="calendar-clock" size={16} color={COLORS.primary} />
-            <Text style={styles.dateTimeText}>{item.date} à {item.time}</Text>
-          </View>
-
-          {/* Footer : Conductrice et Places */}
-          <View style={styles.tripFooter}>
-            <View style={styles.driverInfo}>
-              <Avatar.Icon size={32} icon="account" style={{ backgroundColor: COLORS.accent }} color="#FFF" />
-              <Text style={styles.driverName}>{driverName}</Text>
-              {item.driver?.isKYCVerified && (
-                <MaterialCommunityIcons name="check-decagram" size={16} color={COLORS.success} style={{ marginLeft: 4 }} />
-              )}
+            {/* Date et Heure */}
+            <View style={styles.dateTimeContainer}>
+              <MaterialCommunityIcons name="calendar-clock" size={16} color={COLORS.primary} />
+              <Text style={styles.dateTimeText}>{item.date} à {item.time}</Text>
             </View>
-            
-            <Chip icon="seat-passenger" textStyle={styles.chipText} style={[styles.seatsChip, availableSeats === 0 && { backgroundColor: COLORS.error + '33' }]}>
-              {availableSeats > 0 ? `${availableSeats} places libres` : 'Complet'}
-            </Chip>
-          </View>
-        </Card.Content>
-      </Card>
+
+            {/* Footer : Conductrice et Places */}
+            <View style={styles.tripFooter}>
+              <View style={styles.driverInfo}>
+                <Avatar.Icon size={32} icon="account" style={{ backgroundColor: COLORS.accent }} color="#FFF" />
+                <Text style={styles.driverName}>{driverName}</Text>
+                {item.driver?.isKYCVerified && (
+                  <MaterialCommunityIcons name="check-decagram" size={16} color={COLORS.success} style={{ marginLeft: 4 }} />
+                )}
+              </View>
+              
+              <Chip icon="seat-passenger" textStyle={styles.chipText} style={[styles.seatsChip, availableSeats === 0 && { backgroundColor: COLORS.error + '33' }]}>
+                {availableSeats > 0 ? `${availableSeats} places libres` : 'Complet'}
+              </Chip>
+            </View>
+          </Card.Content>
+        </Card>
+      </TouchableOpacity>
     );
   };
 

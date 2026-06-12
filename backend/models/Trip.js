@@ -36,6 +36,16 @@ const tripSchema = new mongoose.Schema(
       required: [true, 'Le prix est requis'],
       min: [0, 'Le prix ne peut pas être négatif'],
     },
+    description: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    status: {
+      type: String,
+      enum: ['open', 'full', 'completed', 'cancelled'],
+      default: 'open',
+    },
     passengers: [
       {
         type: mongoose.Schema.Types.ObjectId,
