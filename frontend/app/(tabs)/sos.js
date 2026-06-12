@@ -6,6 +6,7 @@ import * as Location from 'expo-location';
 import * as Clipboard from 'expo-clipboard';
 import api from '../../services/api';
 import { COLORS, SPACING, FONT_SIZES } from '../../constants/theme';
+import BrandHeader from '../../components/BrandHeader';
 
 export default function SOSScreen() {
   const [location, setLocation] = useState(null);
@@ -77,10 +78,7 @@ export default function SOSScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Urgence SOS 🚨</Text>
-        <Text style={styles.subtitle}>Votre sécurité est notre priorité.</Text>
-      </View>
+      <BrandHeader title="Urgence SOS 🚨" subtitle="Votre sécurité est notre priorité." />
 
       <View style={styles.mapContainer}>
         {loading ? (

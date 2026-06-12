@@ -6,6 +6,8 @@ import { useAuth } from '../../context/AuthContext';
 import { COLORS, SPACING, FONT_SIZES } from '../../constants/theme';
 import { useFocusEffect, useRouter } from 'expo-router';
 import api from '../../services/api';
+import BrandHeader from '../../components/BrandHeader';
+import BrandKYCBadge from '../../components/BrandKYCBadge';
 
 export default function ProfileScreen() {
   const { user, logout, refreshUser } = useAuth();
@@ -29,22 +31,14 @@ export default function ProfileScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.header}>
-        <Avatar.Icon size={80} icon="account" style={styles.avatar} color="#FFF" />
-        <Text style={styles.name}>{user?.firstName} {user?.lastName}</Text>
-        {user?.isKYCVerified ? (
-          <View style={styles.badgeContainer}>
-            <MaterialCommunityIcons name="check-decagram" size={20} color={COLORS.success} />
-            <Text style={styles.badgeText}>Profil Vérifié</Text>
-          </View>
-        ) : (
-          <View style={styles.badgeContainer}>
-            <MaterialCommunityIcons name="alert-circle-outline" size={20} color={COLORS.error} />
-            <Text style={[styles.badgeText, { color: COLORS.error }]}>Non vérifié</Text>
-          </View>
-        )}
-      </View>
+    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+      <BrandHeader title="Mon Profil" subtitle="Gérer mon compte" />
+      <ScrollView contentContainerStyle={[styles.container, { paddingTop: SPACING.md }]}>
+        <View style={[styles.header, { paddingTop: 0, paddingBottom: SPACING.md }]}>
+          <Avatar.Icon size={80} icon="account" style={styles.avatar} color="#FFF" />
+          <Text style={styles.name}>{user?.firstName} {user?.lastName}</Text>
+          <BrandKYCBadge verified={user?.isKYCVerified} />
+        </View>
 
       <View style={styles.statsContainer}>
         <View style={styles.statBox}>
@@ -104,6 +98,7 @@ export default function ProfileScreen() {
         </Button>
       </View>
     </ScrollView>
+    </View>
   );
 }
 
@@ -125,10 +120,12 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   name: {
-    fontSize: FONT_SIZES.hero,
-    fontWeight: 'bold',
-    color: COLORS.text,
+    fontSize: FONT_SIZES.title,
+    fontFamily: 'Inter_700Bold',
+    marginTop: SPACING.sm,
     marginBottom: SPACING.xs,
+    textAlign: 'center',
+    paddingHorizontal: SPACING.lg,
   },
   badgeContainer: {
     flexDirection: 'row',

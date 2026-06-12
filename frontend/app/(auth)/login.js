@@ -8,6 +8,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { SPACING, FONT_SIZES } from '../../constants/theme';
 import CustomInput from '../../components/CustomInput';
 import CustomButton from '../../components/CustomButton';
+import BrandLogo from '../../components/BrandLogo';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -46,14 +47,9 @@ export default function LoginScreen() {
         
         {/* LOGO AREA */}
         <View style={styles.logoContainer}>
-          <View style={[styles.iconWrapper, { backgroundColor: colors.primaryLight }]}>
-            <MaterialCommunityIcons name="shield-car" size={60} color={colors.primary} />
-          </View>
-          <Text style={[styles.appName, { color: colors.text, fontFamily: 'Inter_700Bold' }]}>
-            Co-Elles
-          </Text>
-          <Text style={[styles.tagline, { color: colors.textSecondary, fontFamily: 'Inter_400Regular' }]}>
-            Le covoiturage de confiance.
+          <BrandLogo size={140} style={{ marginBottom: SPACING.md }} />
+          <Text style={[styles.tagline, { color: colors.textSecondary, fontFamily: 'Inter_400Regular', textAlign: 'center' }]}>
+            Voyagez entre femmes en toute confiance.
           </Text>
         </View>
 

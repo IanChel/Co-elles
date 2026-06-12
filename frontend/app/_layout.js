@@ -27,6 +27,8 @@ function PaperThemeWrapper({ children }) {
 }
 
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useState } from 'react';
+import AnimatedSplashScreen from '../components/AnimatedSplashScreen';
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
@@ -35,6 +37,8 @@ export default function RootLayout() {
     Inter_600SemiBold,
     Inter_700Bold,
   });
+
+  const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
@@ -52,6 +56,7 @@ export default function RootLayout() {
         <AuthProvider>
           <PaperThemeWrapper>
             <Stack screenOptions={{ headerShown: false }} />
+            {showSplash && <AnimatedSplashScreen onFinish={() => setShowSplash(false)} />}
           </PaperThemeWrapper>
         </AuthProvider>
       </ThemeProvider>

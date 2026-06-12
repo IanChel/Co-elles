@@ -8,6 +8,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { SPACING, FONT_SIZES } from '../../constants/theme';
 import CustomInput from '../../components/CustomInput';
 import CustomButton from '../../components/CustomButton';
+import BrandLogo from '../../components/BrandLogo';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -51,14 +52,9 @@ export default function RegisterScreen() {
         
         {/* LOGO AREA */}
         <View style={styles.logoContainer}>
-          <View style={[styles.iconWrapper, { backgroundColor: colors.primaryLight }]}>
-            <MaterialCommunityIcons name="shield-account" size={50} color={colors.primary} />
-          </View>
-          <Text style={[styles.appName, { color: colors.text, fontFamily: 'Inter_700Bold' }]}>
-            Rejoignez-nous
-          </Text>
-          <Text style={[styles.tagline, { color: colors.textSecondary, fontFamily: 'Inter_400Regular' }]}>
-            Créez votre compte en 2 minutes.
+          <BrandLogo size={140} style={{ marginBottom: SPACING.md }} />
+          <Text style={[styles.tagline, { color: colors.textSecondary, fontFamily: 'Inter_400Regular', textAlign: 'center' }]}>
+            Voyagez entre femmes en toute confiance.
           </Text>
         </View>
 

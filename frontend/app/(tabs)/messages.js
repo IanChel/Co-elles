@@ -6,6 +6,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { COLORS, SPACING, FONT_SIZES } from '../../constants/theme';
+import BrandHeader from '../../components/BrandHeader';
 
 export default function MessagesScreen() {
   const router = useRouter();
@@ -112,10 +113,7 @@ export default function MessagesScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Messages</Text>
-        <Text style={styles.subtitle}>Vos conversations avec les conductrices</Text>
-      </View>
+      <BrandHeader title="Messages" subtitle="Vos conversations avec les conductrices" />
 
       {loading && !refreshing ? (
         <View style={styles.center}>

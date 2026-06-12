@@ -7,6 +7,8 @@ import { useTheme } from '../../context/ThemeContext';
 import { SPACING, FONT_SIZES, BORDER_RADIUS, SHADOWS } from '../../constants/theme';
 import CustomInput from '../../components/CustomInput';
 import CustomButton from '../../components/CustomButton';
+import BrandHeader from '../../components/BrandHeader';
+import SuccessModal from '../../components/SuccessModal';
 import SOSFloatingButton from '../../components/SOSFloatingButton';
 
 export default function CreateTripScreen() {
@@ -19,24 +21,27 @@ export default function CreateTripScreen() {
   const [time, setTime] = useState('');
   const [seats, setSeats] = useState('3');
   const [price, setPrice] = useState('15');
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const handlePublish = () => {
+    // Afficher la modale de succès
+    setShowSuccess(true);
+    
     // Redirection après publication
-    router.push('/(tabs)/home');
+    setTimeout(() => {
+      setShowSuccess(false);
+      router.push('/(tabs)/home');
+    }, 2500);
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={[styles.container, { backgroundColor: colors.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
-        {/* HEADER */}
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>Proposer un trajet</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Partagez votre route en toute sécurité avec d'autres femmes.</Text>
-        </View>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <BrandHeader title="Proposer un trajet" subtitle="Partagez votre route en toute sécurité avec d'autres femmes." />
+      <KeyboardAvoidingView 
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView contentContainerStyle={[styles.scrollContent, { paddingTop: SPACING.md }]} showsVerticalScrollIndicator={false}>
 
         {/* TRIP CARD */}
         <View style={[
@@ -145,7 +150,15 @@ export default function CreateTripScreen() {
       
       {/* Bouton SOS Flottant persistant */}
       <SOSFloatingButton />
-    </KeyboardAvoidingView>
+      
+      <SuccessModal 
+        visible={showSuccess} 
+        title="Trajet publié" 
+        message="Votre trajet a été ajouté avec succès." 
+        onClose={() => setShowSuccess(false)} 
+      />
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 

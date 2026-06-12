@@ -10,6 +10,8 @@ import CustomButton from '../../components/CustomButton';
 import TripCard from '../../components/TripCard';
 import SOSFloatingButton from '../../components/SOSFloatingButton';
 import FilterBottomSheet from '../../components/FilterBottomSheet';
+import BrandHeader from '../../components/BrandHeader';
+import BrandLogo from '../../components/BrandLogo';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -92,9 +94,10 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { backgroundColor: colors.background }]}>
-        <Text style={[styles.title, { color: colors.text }]}>Découvrez</Text>
-        <Text style={[styles.subtitle, { color: colors.primary }]}>Votre prochain trajet 🚗</Text>
+      <BrandHeader 
+        title="Découvrez" 
+        subtitle="Votre prochain trajet"
+      >
         
         {/* Barre de Recherche type Airbnb */}
         <TouchableOpacity 
@@ -121,7 +124,7 @@ export default function HomeScreen() {
             <View style={[styles.activeFilterBadge, { backgroundColor: colors.primary }]} />
           )}
         </TouchableOpacity>
-      </View>
+      </BrandHeader>
 
       {loading && !refreshing ? (
         <View style={styles.centerContainer}>
@@ -135,9 +138,13 @@ export default function HomeScreen() {
       ) : filteredTrips.length === 0 ? (
         <View style={styles.centerContainer}>
           <View style={[styles.emptyCircle, { backgroundColor: colors.surface }]}>
-            <MaterialCommunityIcons name={hasActiveFilters ? "filter-variant-remove" : "car-off"} size={60} color={colors.border} />
+            {hasActiveFilters ? (
+              <MaterialCommunityIcons name="filter-variant-remove" size={60} color={colors.border} />
+            ) : (
+              <BrandLogo size={60} style={{ opacity: 0.3 }} />
+            )}
           </View>
-          <Text style={[styles.emptyText, { color: colors.text }]}>
+          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
             {hasActiveFilters ? "Aucun résultat" : "Aucun trajet proposé"}
           </Text>
           <Text style={[styles.emptySubText, { color: colors.textSecondary }]}>

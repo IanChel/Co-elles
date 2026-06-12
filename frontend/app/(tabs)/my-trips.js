@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../../services/api';
 import { COLORS, SPACING, FONT_SIZES } from '../../constants/theme';
 import ReviewModal from '../../components/ReviewModal';
+import BrandHeader from '../../components/BrandHeader';
 
 export default function MyTripsScreen() {
   const router = useRouter();
@@ -264,10 +265,7 @@ export default function MyTripsScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Mes Trajets</Text>
-        <Text style={styles.subtitle}>Suivez vos réservations et trajets proposés</Text>
-      </View>
+      <BrandHeader title="Mes Trajets" subtitle="Suivez vos réservations et trajets" />
 
       <View style={styles.tabContainer}>
         <SegmentedButtons
