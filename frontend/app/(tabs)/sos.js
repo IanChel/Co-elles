@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Dimensions, Alert, Share } from 'react-native';
-import { Text, Button, ActivityIndicator, Snackbar, Card } from 'react-native-paper';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, StyleSheet, Animated, Alert, Share, Linking, Platform } from 'react-native';
+import { Text, Button, ActivityIndicator, Snackbar } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import * as Clipboard from 'expo-clipboard';
+import MapView, { Marker } from 'react-native-maps';
 import api from '../../services/api';
 import { COLORS, SPACING, FONT_SIZES } from '../../constants/theme';
 import BrandHeader from '../../components/BrandHeader';
@@ -14,27 +15,60 @@ export default function SOSScreen() {
   const [loading, setLoading] = useState(true);
   const [sosLoading, setSosLoading] = useState(false);
   const [visible, setVisible] = useState(false);
+  const [permissionDenied, setPermissionDenied] = useState(false);
+
+  // Animation pulsante pour le marqueur SOS
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    (async () => {
-      setLoading(true);
-      try {
-        let { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          setErrorMsg('Permission GPS refusée.');
-          setLoading(false);
-          return;
-        }
-
-        let currentLocation = await Location.getCurrentPositionAsync({});
-        setLocation(currentLocation.coords);
-      } catch (error) {
-        setErrorMsg("Impossible de récupérer la position.");
-      } finally {
-        setLoading(false);
-      }
-    })();
+    requestLocationPermission();
   }, []);
+
+  // Lancer la pulsation dès qu'on a la position
+  useEffect(() => {
+    if (location) {
+      const pulse = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.6,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      pulse.start();
+      return () => pulse.stop();
+    }
+  }, [location]);
+
+  const requestLocationPermission = async () => {
+    setLoading(true);
+    setErrorMsg(null);
+    setPermissionDenied(false);
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setPermissionDenied(true);
+        setErrorMsg('Permission GPS refusée. Activez la localisation dans vos réglages.');
+        setLoading(false);
+        return;
+      }
+
+      let currentLocation = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+      setLocation(currentLocation.coords);
+    } catch (error) {
+      setErrorMsg("Impossible de récupérer la position. Vérifiez votre GPS.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const copyToClipboard = async () => {
     if (location) {
@@ -55,6 +89,19 @@ export default function SOSScreen() {
     }
   };
 
+  const openInMaps = () => {
+    if (!location) return;
+    const { latitude, longitude } = location;
+    const url = Platform.select({
+      ios: `maps:0,0?q=${latitude},${longitude}`,
+      android: `geo:${latitude},${longitude}?q=${latitude},${longitude}`,
+    });
+    Linking.openURL(url).catch(() => {
+      // Fallback vers Google Maps web
+      Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`);
+    });
+  };
+
   const handleSOS = async () => {
     if (!location) {
       Alert.alert("Position introuvable", "Impossible d'envoyer l'alerte sans votre position GPS.");
@@ -67,7 +114,7 @@ export default function SOSScreen() {
         latitude: location.latitude,
         longitude: location.longitude,
       });
-      setVisible(true); // Afficher le message de succès
+      setVisible(true);
     } catch (error) {
       Alert.alert("Erreur", "L'alerte n'a pas pu être envoyée.");
       console.log(error);
@@ -84,30 +131,81 @@ export default function SOSScreen() {
         {loading ? (
           <View style={styles.centerContainer}>
             <ActivityIndicator size="large" color={COLORS.error} />
-            <Text style={{ marginTop: SPACING.md, color: COLORS.textSecondary }}>Recherche de votre position GPS...</Text>
+            <Text style={{ marginTop: SPACING.md, color: COLORS.textSecondary }}>
+              Recherche de votre position GPS...
+            </Text>
           </View>
         ) : errorMsg ? (
           <View style={styles.centerContainer}>
             <MaterialCommunityIcons name="map-marker-off" size={48} color={COLORS.error} />
             <Text style={styles.errorText}>{errorMsg}</Text>
+            <Button
+              mode="contained"
+              onPress={permissionDenied ? () => Linking.openSettings() : requestLocationPermission}
+              style={{ marginTop: SPACING.lg }}
+              buttonColor={COLORS.primary}
+              icon={permissionDenied ? 'cog' : 'refresh'}
+            >
+              {permissionDenied ? 'Ouvrir les réglages' : 'Réessayer'}
+            </Button>
           </View>
         ) : location ? (
-          <View style={styles.radarContainer}>
-            {/* Radar UI pour remplacer la carte native */}
-            <View style={styles.radarCircle1}>
-              <View style={styles.radarCircle2}>
-                <View style={styles.radarCenter}>
-                  <MaterialCommunityIcons name="crosshairs-gps" size={40} color={COLORS.white} />
+          <View style={{ flex: 1 }}>
+            <MapView
+              style={StyleSheet.absoluteFillObject}
+              initialRegion={{
+                latitude: location.latitude,
+                longitude: location.longitude,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              }}
+              showsUserLocation={true}
+              showsMyLocationButton={true}
+            >
+              <Marker
+                coordinate={{
+                  latitude: location.latitude,
+                  longitude: location.longitude,
+                }}
+                title="Ma position"
+                description="Vous êtes ici"
+              >
+                <View style={styles.markerContainer}>
+                  <Animated.View
+                    style={[
+                      styles.markerPulse,
+                      { transform: [{ scale: pulseAnim }], opacity: pulseAnim.interpolate({
+                        inputRange: [1, 1.6],
+                        outputRange: [0.6, 0],
+                      })},
+                    ]}
+                  />
+                  <View style={styles.markerDot}>
+                    <MaterialCommunityIcons name="crosshairs-gps" size={20} color="#FFF" />
+                  </View>
                 </View>
+              </Marker>
+            </MapView>
+
+            {/* Overlay en bas de la carte avec les coordonnées */}
+            <View style={styles.coordsOverlay}>
+              <View style={styles.coordsRow}>
+                <MaterialCommunityIcons name="crosshairs-gps" size={16} color={COLORS.error} />
+                <Text style={styles.coordsText}>
+                  {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}
+                </Text>
               </View>
+              <Button
+                mode="text"
+                compact
+                onPress={openInMaps}
+                textColor={COLORS.primary}
+                icon="open-in-new"
+                labelStyle={{ fontSize: 12 }}
+              >
+                Ouvrir dans Maps
+              </Button>
             </View>
-            <Card style={styles.coordsCard}>
-              <Card.Content>
-                <Text style={styles.coordsTitle}>Position détectée et prête à être envoyée :</Text>
-                <Text style={styles.coordsText}>Latitude: {location.latitude.toFixed(5)}</Text>
-                <Text style={styles.coordsText}>Longitude: {location.longitude.toFixed(5)}</Text>
-              </Card.Content>
-            </Card>
           </View>
         ) : null}
       </View>
@@ -126,7 +224,7 @@ export default function SOSScreen() {
               textColor={COLORS.primary}
               style={{ flex: 1, marginRight: SPACING.sm, borderColor: COLORS.primary }}
             >
-              Copier Position
+              Copier
             </Button>
             <Button 
               icon="share-variant" 
@@ -135,7 +233,7 @@ export default function SOSScreen() {
               buttonColor={COLORS.primary}
               style={{ flex: 1, marginLeft: SPACING.sm }}
             >
-              Partager Position
+              Partager
             </Button>
           </View>
         )}
@@ -168,20 +266,67 @@ export default function SOSScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  header: { padding: SPACING.lg, paddingTop: 60, backgroundColor: COLORS.surface, elevation: 4, zIndex: 10 },
-  title: { fontSize: FONT_SIZES.title, fontWeight: 'bold', color: COLORS.error },
-  subtitle: { fontSize: FONT_SIZES.body, color: COLORS.textSecondary, marginTop: 2 },
-  mapContainer: { flex: 1, backgroundColor: '#1E1E1E', justifyContent: 'center', alignItems: 'center' },
+  mapContainer: { flex: 1, backgroundColor: '#F0F0F0' },
   centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: SPACING.lg },
   errorText: { color: COLORS.error, textAlign: 'center', marginTop: SPACING.sm, fontSize: FONT_SIZES.body },
-  
-  radarContainer: { alignItems: 'center', justifyContent: 'center', width: '100%' },
-  radarCircle1: { width: 250, height: 250, borderRadius: 125, backgroundColor: 'rgba(244, 67, 54, 0.1)', justifyContent: 'center', alignItems: 'center' },
-  radarCircle2: { width: 150, height: 150, borderRadius: 75, backgroundColor: 'rgba(244, 67, 54, 0.3)', justifyContent: 'center', alignItems: 'center' },
-  radarCenter: { width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.error, justifyContent: 'center', alignItems: 'center', elevation: 10 },
-  coordsCard: { marginTop: SPACING.xl, backgroundColor: 'rgba(255,255,255,0.9)', width: '80%' },
-  coordsTitle: { fontSize: 12, color: COLORS.textSecondary, marginBottom: 4, textAlign: 'center' },
-  coordsText: { fontSize: 14, fontWeight: 'bold', color: COLORS.text, textAlign: 'center' },
+
+  // Marqueur personnalisé avec pulsation
+  markerContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 60,
+    height: 60,
+  },
+  markerPulse: {
+    position: 'absolute',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: COLORS.error,
+  },
+  markerDot: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.error,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 6,
+    shadowColor: COLORS.error,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+  },
+
+  // Overlay coordonnées
+  coordsOverlay: {
+    position: 'absolute',
+    bottom: 10,
+    left: 10,
+    right: 10,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 12,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+  },
+  coordsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  coordsText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginLeft: 6,
+  },
 
   actionContainer: { padding: SPACING.xl, backgroundColor: COLORS.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, elevation: 8, marginTop: -20 },
   warningText: { fontSize: FONT_SIZES.body, color: COLORS.textSecondary, textAlign: 'center', marginBottom: SPACING.lg, lineHeight: 22 },

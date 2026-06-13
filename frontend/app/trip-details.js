@@ -1,16 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, StyleSheet, ScrollView, Alert, Linking, Platform, Dimensions } from 'react-native';
 import { Text, Button, Card, Avatar, Chip, ActivityIndicator, Divider } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import MapView, { Marker, Polyline } from 'react-native-maps';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { COLORS, SPACING, FONT_SIZES } from '../constants/theme';
+import { geocodeCity } from '../services/geocoding';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function TripDetailsScreen() {
   const { id } = useLocalSearchParams();
   const { user } = useAuth();
   const router = useRouter();
+  const mapRef = useRef(null);
 
   const [trip, setTrip] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -18,9 +23,48 @@ export default function TripDetailsScreen() {
   const [alreadyBooked, setAlreadyBooked] = useState(false);
   const [isDriver, setIsDriver] = useState(false);
 
+  // Coordonnées pour la carte
+  const [departureCoords, setDepartureCoords] = useState(null);
+  const [arrivalCoords, setArrivalCoords] = useState(null);
+  const [mapReady, setMapReady] = useState(false);
+
   useEffect(() => {
     fetchTripDetails();
   }, [id]);
+
+  // Géocoder les villes une fois le trajet chargé
+  useEffect(() => {
+    if (trip) {
+      loadCoordinates();
+    }
+  }, [trip]);
+
+  // Ajuster le zoom une fois la carte prête ET les coordonnées disponibles
+  useEffect(() => {
+    if (mapReady && departureCoords && arrivalCoords && mapRef.current) {
+      // Petit délai pour s'assurer que la carte est vraiment rendue (surtout Android)
+      setTimeout(() => {
+        mapRef.current.fitToCoordinates(
+          [departureCoords, arrivalCoords],
+          {
+            edgePadding: { top: 60, right: 60, bottom: 60, left: 60 },
+            animated: true,
+          }
+        );
+      }, 100);
+    }
+  }, [mapReady, departureCoords, arrivalCoords]);
+
+  const loadCoordinates = async () => {
+    if (trip?.departureCity) {
+      const depCoords = await geocodeCity(trip.departureCity);
+      setDepartureCoords(depCoords);
+    }
+    if (trip?.arrivalCity) {
+      const arrCoords = await geocodeCity(trip.arrivalCity);
+      setArrivalCoords(arrCoords);
+    }
+  };
 
   const fetchTripDetails = async () => {
     try {
@@ -83,6 +127,24 @@ export default function TripDetailsScreen() {
     }
   };
 
+  const openRouteInMaps = () => {
+    if (!departureCoords || !arrivalCoords) return;
+    const origin = `${departureCoords.latitude},${departureCoords.longitude}`;
+    const destination = `${arrivalCoords.latitude},${arrivalCoords.longitude}`;
+    
+    const url = Platform.select({
+      ios: `maps:0,0?saddr=${origin}&daddr=${destination}`,
+      android: `google.navigation:q=${destination}&origin=${origin}`,
+    });
+    
+    Linking.openURL(url).catch(() => {
+      // Fallback Google Maps web
+      Linking.openURL(
+        `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=driving`
+      );
+    });
+  };
+
   if (loading) {
     return (
       <View style={styles.center}>
@@ -102,6 +164,7 @@ export default function TripDetailsScreen() {
 
   const availableSeats = trip.seats - (trip.passengers?.length || 0);
   const isFull = availableSeats <= 0;
+  const hasMapData = departureCoords && arrivalCoords;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 100 }}>
@@ -120,6 +183,70 @@ export default function TripDetailsScreen() {
         </View>
         <Text style={styles.priceTag}>{trip.price} €</Text>
       </View>
+
+      {/* Mini-carte du trajet */}
+      {hasMapData && (
+        <View style={styles.mapCard}>
+          <MapView
+            ref={mapRef}
+            style={styles.map}
+            onMapReady={() => setMapReady(true)}
+            scrollEnabled={false}
+            zoomEnabled={false}
+            rotateEnabled={false}
+            pitchEnabled={false}
+            initialRegion={{
+              latitude: (departureCoords.latitude + arrivalCoords.latitude) / 2,
+              longitude: (departureCoords.longitude + arrivalCoords.longitude) / 2,
+              latitudeDelta: Math.abs(departureCoords.latitude - arrivalCoords.latitude) * 2 || 0.5,
+              longitudeDelta: Math.abs(departureCoords.longitude - arrivalCoords.longitude) * 2 || 0.5,
+            }}
+          >
+            {/* Marqueur départ */}
+            <Marker
+              coordinate={departureCoords}
+              title={trip.departureCity}
+              description="Point de départ"
+            >
+              <View style={styles.mapMarker}>
+                <MaterialCommunityIcons name="circle" size={14} color={COLORS.success} />
+              </View>
+            </Marker>
+
+            {/* Marqueur arrivée */}
+            <Marker
+              coordinate={arrivalCoords}
+              title={trip.arrivalCity}
+              description="Destination"
+            >
+              <View style={styles.mapMarker}>
+                <MaterialCommunityIcons name="map-marker" size={22} color={COLORS.error} />
+              </View>
+            </Marker>
+
+            {/* Ligne entre les deux points */}
+            <Polyline
+              coordinates={[departureCoords, arrivalCoords]}
+              strokeColor={COLORS.primary}
+              strokeWidth={3}
+              lineDashPattern={[10, 6]}
+            />
+          </MapView>
+
+          {/* Bouton "Ouvrir dans Maps" en overlay */}
+          <Button
+            mode="contained"
+            compact
+            onPress={openRouteInMaps}
+            style={styles.openMapsButton}
+            buttonColor={COLORS.primary}
+            icon="navigation-variant"
+            labelStyle={{ fontSize: 12 }}
+          >
+            Itinéraire
+          </Button>
+        </View>
+      )}
 
       {/* Infos du trajet */}
       <Card style={styles.infoCard}>
@@ -265,6 +392,36 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
     borderRadius: 12,
     overflow: 'hidden',
+  },
+
+  // Mini-carte
+  mapCard: {
+    margin: SPACING.md,
+    borderRadius: 16,
+    overflow: 'hidden',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    backgroundColor: COLORS.surface,
+  },
+  map: {
+    width: '100%',
+    height: 200,
+  },
+  mapMarker: {
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderRadius: 20,
+    padding: 4,
+    elevation: 3,
+  },
+  openMapsButton: {
+    position: 'absolute',
+    bottom: 10,
+    right: 10,
+    borderRadius: 20,
+    elevation: 4,
   },
 
   infoCard: { margin: SPACING.md, backgroundColor: COLORS.surface, borderRadius: 12, elevation: 2 },

@@ -35,7 +35,8 @@ export default function RegisterScreen() {
 
     try {
       await register(email, password, { firstName, lastName, phone });
-      router.replace('/(tabs)/home');
+      // Redirection obligatoire vers le KYC après inscription
+      router.replace('/(auth)/kyc');
     } catch (error) {
       setErrorMsg("Une erreur est survenue lors de l'inscription");
     } finally {
