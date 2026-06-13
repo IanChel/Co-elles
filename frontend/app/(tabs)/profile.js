@@ -1,11 +1,12 @@
 import React, { useCallback, useState } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
-import { Text, Button, Avatar, Card, Divider } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, ActivityIndicator } from 'react-native';
+import { Text, Button, Card, Divider } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { COLORS, SPACING, FONT_SIZES } from '../../constants/theme';
 import { useFocusEffect, useRouter } from 'expo-router';
-import api from '../../services/api';
+import * as ImagePicker from 'expo-image-picker';
+import api, { API_BASE_URL } from '../../services/api';
 import BrandHeader from '../../components/BrandHeader';
 import BrandKYCBadge from '../../components/BrandKYCBadge';
 
@@ -13,6 +14,7 @@ export default function ProfileScreen() {
   const { user, logout, refreshUser } = useAuth();
   const router = useRouter();
   const [tripCount, setTripCount] = useState('-');
+  const [avatarLoading, setAvatarLoading] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -30,12 +32,127 @@ export default function ProfileScreen() {
     router.replace('/(auth)/login');
   };
 
+  // Construire l'URL complète de l'avatar
+  const getAvatarUrl = () => {
+    if (!user?.avatar) return null;
+    // L'avatar est stocké comme "/uploads/avatars/xxx.jpg"
+    // On construit l'URL complète avec le base URL du serveur (sans /api)
+    const baseUrl = API_BASE_URL.replace('/api', '');
+    return `${baseUrl}${user.avatar}`;
+  };
+
+  const handlePickAvatar = () => {
+    Alert.alert(
+      'Photo de profil',
+      'Choisissez une option',
+      [
+        {
+          text: 'Prendre une photo',
+          onPress: () => pickImage('camera'),
+        },
+        {
+          text: 'Depuis la galerie',
+          onPress: () => pickImage('gallery'),
+        },
+        { text: 'Annuler', style: 'cancel' },
+      ]
+    );
+  };
+
+  const pickImage = async (source) => {
+    try {
+      let result;
+
+      if (source === 'camera') {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permission requise', "Autorisez l'accès à l'appareil photo dans vos réglages.");
+          return;
+        }
+        result = await ImagePicker.launchCameraAsync({
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 0.7,
+        });
+      } else {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permission requise', "Autorisez l'accès à la galerie dans vos réglages.");
+          return;
+        }
+        result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ['images'],
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 0.7,
+        });
+      }
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        await uploadAvatar(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Erreur pick image:', error);
+      Alert.alert('Erreur', "Impossible de sélectionner l'image.");
+    }
+  };
+
+  const uploadAvatar = async (imageUri) => {
+    setAvatarLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('avatar', {
+        uri: imageUri,
+        type: 'image/jpeg',
+        name: 'avatar.jpg',
+      });
+
+      await api.post('/auth/avatar', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      // Rafraîchir les données utilisateur pour récupérer le nouvel avatar
+      await refreshUser();
+      Alert.alert('Succès ! 📸', 'Votre photo de profil a été mise à jour.');
+    } catch (error) {
+      console.error('Erreur upload avatar:', error);
+      Alert.alert('Erreur', "Impossible de mettre à jour la photo de profil.");
+    } finally {
+      setAvatarLoading(false);
+    }
+  };
+
+  const avatarUrl = getAvatarUrl();
+
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>
       <BrandHeader title="Mon Profil" subtitle="Gérer mon compte" />
       <ScrollView contentContainerStyle={[styles.container, { paddingTop: SPACING.md }]}>
         <View style={[styles.header, { paddingTop: 0, paddingBottom: SPACING.md }]}>
-          <Avatar.Icon size={80} icon="account" style={styles.avatar} color="#FFF" />
+          
+          {/* Avatar avec bouton d'édition */}
+          <TouchableOpacity onPress={handlePickAvatar} activeOpacity={0.8} style={styles.avatarWrapper}>
+            {avatarLoading ? (
+              <View style={[styles.avatarPlaceholder, { backgroundColor: COLORS.primary }]}>
+                <ActivityIndicator size="small" color="#FFF" />
+              </View>
+            ) : avatarUrl ? (
+              <Image 
+                source={{ uri: avatarUrl }} 
+                style={styles.avatarImage}
+              />
+            ) : (
+              <View style={[styles.avatarPlaceholder, { backgroundColor: COLORS.primary }]}>
+                <Text style={styles.avatarInitial}>
+                  {user?.firstName?.charAt(0)?.toUpperCase() || 'U'}
+                </Text>
+              </View>
+            )}
+            <View style={styles.editBadge}>
+              <MaterialCommunityIcons name="camera" size={14} color="#FFF" />
+            </View>
+          </TouchableOpacity>
+
           <Text style={styles.name}>{user?.firstName} {user?.lastName}</Text>
           <BrandKYCBadge verified={user?.isKYCVerified} />
         </View>
@@ -115,9 +232,45 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
-  avatar: {
-    backgroundColor: COLORS.primary,
+  // Avatar styles
+  avatarWrapper: {
+    position: 'relative',
     marginBottom: SPACING.md,
+  },
+  avatarImage: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    borderWidth: 3,
+    borderColor: COLORS.primary,
+  },
+  avatarPlaceholder: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: COLORS.primary,
+  },
+  avatarInitial: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#FFF',
+  },
+  editBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: COLORS.accent,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: COLORS.surface,
+    elevation: 3,
   },
   name: {
     fontSize: FONT_SIZES.title,

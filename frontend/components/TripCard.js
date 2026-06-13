@@ -53,7 +53,7 @@ export default function TripCard({ trip, onPress }) {
       <View style={[styles.tripFooter, { borderTopColor: colors.border }]}>
         <View style={styles.driverInfo}>
           <View style={styles.avatarContainer}>
-            <UserAvatar name={driverName} verified={driverVerified} size={40} />
+            <UserAvatar name={driverName} avatarPath={trip.driver?.avatar} verified={driverVerified} size={40} />
           </View>
           <View>
             <Text style={[styles.driverName, { color: colors.text }]}>{driverName}</Text>

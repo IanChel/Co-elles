@@ -25,9 +25,14 @@ const io = new Server(server, {
 // Rendre io accessible dans les routes via req.app.get('io')
 app.set('io', io);
 
+const path = require('path');
+
 // --- Middlewares globaux ---
 app.use(cors());
 app.use(express.json());
+
+// --- Servir les fichiers uploadés (avatars, KYC) ---
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // --- Route de santé (health check) ---
 app.get('/', (req, res) => {

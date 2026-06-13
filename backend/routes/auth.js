@@ -1,9 +1,40 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const User = require('../models/User');
 const protect = require('../middleware/auth');
 
 const router = express.Router();
+
+// Configuration Multer pour l'avatar
+const avatarStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const dir = path.join(__dirname, '../uploads/avatars');
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    cb(null, dir);
+  },
+  filename: function (req, file, cb) {
+    // Nom unique basé sur l'ID utilisateur
+    const ext = path.extname(file.originalname);
+    cb(null, req.user._id + '-avatar-' + Date.now() + ext);
+  },
+});
+
+const uploadAvatar = multer({
+  storage: avatarStorage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB max
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Seules les images sont autorisées.'));
+    }
+  },
+});
 
 // --- Générer un JWT ---
 const generateToken = (id) => {
@@ -42,6 +73,7 @@ router.post('/register', async (req, res) => {
       isKYCVerified: user.isKYCVerified,
       averageRating: user.averageRating,
       ratingCount: user.ratingCount,
+      avatar: user.avatar,
       token: generateToken(user._id),
     });
   } catch (error) {
@@ -83,6 +115,7 @@ router.post('/login', async (req, res) => {
       isKYCVerified: user.isKYCVerified,
       averageRating: user.averageRating,
       ratingCount: user.ratingCount,
+      avatar: user.avatar,
       token: generateToken(user._id),
     });
   } catch (error) {
@@ -96,6 +129,44 @@ router.post('/login', async (req, res) => {
 // ============================================
 router.get('/me', protect, async (req, res) => {
   res.json(req.user);
+});
+
+// ============================================
+// POST /api/auth/avatar
+// Upload de la photo de profil (protégé)
+// ============================================
+router.post('/avatar', protect, uploadAvatar.single('avatar'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'Aucune image fournie.' });
+    }
+
+    // Supprimer l'ancien avatar s'il existe
+    if (req.user.avatar) {
+      const oldAvatarFilename = req.user.avatar.split('/uploads/avatars/').pop();
+      if (oldAvatarFilename) {
+        const oldPath = path.join(__dirname, '../uploads/avatars', oldAvatarFilename);
+        if (fs.existsSync(oldPath)) {
+          fs.unlinkSync(oldPath);
+        }
+      }
+    }
+
+    // Construire l'URL publique de l'avatar
+    const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+
+    // Mettre à jour le champ avatar dans MongoDB
+    req.user.avatar = avatarUrl;
+    await req.user.save();
+
+    res.json({
+      message: 'Photo de profil mise à jour ! 📸',
+      avatar: avatarUrl,
+    });
+  } catch (error) {
+    console.error('Erreur upload avatar:', error);
+    res.status(500).json({ message: 'Erreur lors de l\'upload.', error: error.message });
+  }
 });
 
 module.exports = router;

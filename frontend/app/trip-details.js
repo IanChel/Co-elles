@@ -8,6 +8,7 @@ import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { COLORS, SPACING, FONT_SIZES } from '../constants/theme';
 import { geocodeCity } from '../services/geocoding';
+import UserAvatar from '../components/UserAvatar';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -284,7 +285,12 @@ export default function TripDetailsScreen() {
         <Card.Content>
           <Text style={styles.sectionTitle}>Conductrice</Text>
           <View style={styles.driverRow}>
-            <Avatar.Icon size={48} icon="account" style={{ backgroundColor: COLORS.accent }} color="#FFF" />
+            <UserAvatar 
+              name={trip.driver?.firstName || 'U'} 
+              avatarPath={trip.driver?.avatar} 
+              verified={trip.driver?.isKYCVerified}
+              size={48} 
+            />
             <View style={styles.driverInfo}>
               <View style={styles.driverNameRow}>
                 <Text style={styles.driverName}>

@@ -3,9 +3,24 @@ import { View, StyleSheet, Image } from 'react-native';
 import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import { API_BASE_URL } from '../services/api';
 
-export default function UserAvatar({ name = "User", imageUrl, size = 48, verified = false }) {
+/**
+ * Construit l'URL complète d'un avatar à partir du chemin relatif stocké en base.
+ * @param {string} avatarPath - Ex: "/uploads/avatars/xxx.jpg"
+ * @returns {string|null}
+ */
+export function getFullAvatarUrl(avatarPath) {
+  if (!avatarPath) return null;
+  const baseUrl = API_BASE_URL.replace('/api', '');
+  return `${baseUrl}${avatarPath}`;
+}
+
+export default function UserAvatar({ name = "User", imageUrl, avatarPath, size = 48, verified = false }) {
   const { colors } = useTheme();
+
+  // Priorité : imageUrl direct > avatarPath (depuis la BDD)
+  const resolvedUrl = imageUrl || getFullAvatarUrl(avatarPath);
 
   return (
     <View style={styles.container}>
@@ -13,8 +28,8 @@ export default function UserAvatar({ name = "User", imageUrl, size = 48, verifie
         styles.avatar, 
         { width: size, height: size, borderRadius: size / 2, backgroundColor: colors.primaryLight }
       ]}>
-        {imageUrl ? (
-          <Image source={{ uri: imageUrl }} style={{ width: size, height: size, borderRadius: size / 2 }} />
+        {resolvedUrl ? (
+          <Image source={{ uri: resolvedUrl }} style={{ width: size, height: size, borderRadius: size / 2 }} />
         ) : (
           <Text style={[styles.initial, { color: colors.primary, fontSize: size * 0.4 }]}>
             {name.charAt(0).toUpperCase()}
