@@ -1,98 +1,93 @@
-# Co-Elles - MVP 🚗🚺
+# 🚗 Co-Elles — Le Covoiturage 100% Féminin et Sécurisé
 
-Bienvenue sur le dépôt du MVP de l'application **Co-Elles**, une plateforme de covoiturage sécurisée dédiée aux femmes, avec des fonctionnalités avancées de vérification (KYC) et de sécurité (bouton SOS avec tracking GPS en temps réel).
-
-Ce projet est divisé en deux parties principales :
-- `backend/` : Une API REST robuste développée avec **Node.js, Express et MongoDB**.
-- `frontend/` : Une application mobile multiplateforme développée avec **React Native et Expo**.
+**Co-Elles** est une application mobile innovante dédiée à la mobilité des femmes. Conçue pour offrir un espace de confiance, de sororité et de sécurité, elle permet aux femmes de voyager ensemble en toute sérénité.
 
 ---
 
-## 🛠️ Prérequis
+## 🛠️ Stack Technique
 
-Avant de lancer le projet, assurez-vous d'avoir installé :
-1. **Node.js** (version 18 ou supérieure)
-2. **MongoDB** (ou une URI MongoDB Atlas valide)
-3. **L'application Expo Go** installée sur votre téléphone physique :
-   - [Télécharger Expo Go pour iOS (App Store)](https://apps.apple.com/fr/app/expo-go/id982107779)
-   - [Télécharger Expo Go pour Android (Google Play)](https://play.google.com/store/apps/details?id=host.exp.exponent)
+Le projet repose sur une architecture moderne, robuste et orientée temps réel :
 
----
+### Frontend (Application Mobile)
+- **Framework :** React Native avec Expo (SDK 54)
+- **Navigation :** Expo Router (File-based routing)
+- **UI & Design :** React Native Paper (Material Design 3), animations fluides (Animated API)
+- **Cartographie :** `react-native-maps` et `expo-location` (géocodage en temps réel)
+- **Caméra & Fichiers :** `expo-image-picker`
+- **Temps Réel :** `socket.io-client`
 
-## 🚀 Étape 1 : Démarrer le Backend
-
-Le backend doit toujours tourner en premier, car c'est lui qui gère l'authentification et les données.
-
-1. Ouvrez un terminal à la racine du projet et déplacez-vous dans le dossier backend :
-   ```bash
-   cd backend
-   ```
-2. Installez les dépendances :
-   ```bash
-   npm install
-   ```
-3. Vérifiez la configuration de la base de données :
-   - Ouvrez le fichier `backend/config/db.js` et assurez-vous que l'URI correspond à votre cluster MongoDB.
-   - Par défaut, l'application utilise une configuration locale ou l'URI définie par votre équipe.
-4. Lancez le serveur :
-   ```bash
-   npm start
-   ```
-   > Le terminal devrait afficher : `Serveur démarré sur le port 5000` et `MongoDB Connecté`.
+### Backend (Serveur & API)
+- **Environnement :** Node.js & Express.js
+- **Base de Données :** MongoDB avec Mongoose (modélisation des données)
+- **Temps Réel :** Socket.io (serveur WebSockets)
+- **Sécurité :** JWT (JSON Web Tokens) & Bcrypt (hachage des mots de passe)
+- **Traitement d'Image & OCR :** Multer (upload), Tesseract.js (reconnaissance de caractères pour le KYC)
 
 ---
 
-## 📱 Étape 2 : Démarrer le Frontend (Application Mobile)
+## ✨ Fonctionnalités Actuelles
 
-Le frontend doit se connecter au backend. Comme on teste sur un téléphone physique, l'application a besoin de l'adresse IP locale de votre ordinateur.
+L'application intègre d'ores et déjà un panel complet de fonctionnalités pour assurer un service de bout en bout :
 
-### Configuration préalable de l'IP
-1. Cherchez l'adresse IP locale de votre ordinateur (Ex: `192.168.1.XX` ou `172.20.10.XX` si vous utilisez le partage de connexion).
-2. Ouvrez le fichier `frontend/services/api.js`.
-3. Modifiez l'URL de base pour remplacer `localhost` par votre IP :
-   ```javascript
-   // Exemple :
-   const api = axios.create({
-     baseURL: 'http://VOTRE_ADRESSE_IP:5000/api', 
-   });
-   ```
+### 🛡️ Sécurité & Confiance au premier plan
+- **Vérification d'Identité (KYC) :** Capture de la carte d'identité via l'appareil photo et extraction du texte par Intelligence Artificielle (OCR avec Tesseract.js) pour garantir que chaque utilisatrice est bien celle qu'elle prétend être.
+- **Bouton SOS d'Urgence :** Écran dédié permettant d'alerter instantanément des contacts de confiance avec transmission de la position GPS exacte (via géocodage temps réel) et cartographie native.
+- **Profils Vérifiés :** Avatar personnalisable, notes et avis de la communauté (système d'étoiles).
 
-### Lancement de l'application
-1. Ouvrez un **nouveau** terminal (sans fermer celui du backend) et déplacez-vous dans le frontend :
-   ```bash
-   cd frontend
-   ```
-2. Installez les dépendances :
-   ```bash
-   npm install --legacy-peer-deps
-   ```
-3. Lancez le serveur Expo (avec le flag `--clear` pour éviter les bugs de cache) :
-   ```bash
-   npm run start -- --clear
-   ```
-   > Un énorme QR Code va apparaître dans votre terminal.
+### 📍 Covoiturage & Mobilité
+- **Recherche Avancée :** Barre de recherche style "Airbnb" avec filtrage multicritères rapide côté client (ville de départ, arrivée, date, places disponibles).
+- **Publication & Réservation :** Création intuitive de trajets, gestion des places assises et de l'état du trajet (ouvert/complet).
+- **Cartographie Intégrée :** Visualisation des itinéraires de voyage sur des mini-cartes interactives avec points de départ et d'arrivée, et redirections vers les applications de navigation natives (Apple Maps, Google Maps).
+
+### 💬 Communication
+- **Messagerie Temps Réel :** Chat intégré en direct (propulsé par Socket.io) permettant aux conductrices et passagères d'échanger avant le départ de manière fluide.
 
 ---
 
-## 🍏 Comment tester sur iOS (iPhone)
-1. Assurez-vous que votre iPhone est connecté sur le **même réseau WiFi** que votre ordinateur (ou en partage de connexion avec votre ordi).
-2. Ouvrez simplement l'application **Appareil Photo** native de votre iPhone.
-3. Pointez l'appareil photo vers le QR Code affiché dans le terminal.
-4. Une notification jaune d'Apple "Ouvrir dans Expo Go" va apparaître. Cliquez dessus.
-5. L'application va se compiler (ça peut prendre quelques secondes) et s'ouvrir sur votre téléphone !
+## 🚀 Vision Ambition & Fonctionnalités Futures
 
-## 🤖 Comment tester sur Android
-1. Assurez-vous que votre téléphone Android est connecté sur le **même réseau WiFi** que votre ordinateur.
-2. Ouvrez l'application **Expo Go** que vous avez téléchargée.
-3. Sur l'écran d'accueil d'Expo Go, cliquez sur **"Scan QR Code"**.
-4. Pointez la caméra vers le QR Code affiché dans votre terminal.
-5. L'application va se charger et s'ouvrir !
+Co-Elles ne compte pas s'arrêter là. Notre vision est de devenir le standard de la mobilité féminine avec des fonctionnalités technologiques de pointe :
+
+1. **🧠 Matching Prédictif (IA) :** Un algorithme d'Intelligence Artificielle suggérant les meilleurs trajets et profils compatibles en fonction des habitudes de voyage, des horaires et des affinités (musique, discussion, etc.).
+2. **💳 Paiement In-App & Wallet Sécurisé :** Intégration de Stripe pour bloquer les fonds à la réservation et libérer le paiement à la conductrice à l'arrivée. Un portefeuille virtuel (Wallet) pour gérer ses gains et virements instantanés.
+3. **📡 Live Tracking Partagé :** Possibilité de générer un lien de suivi GPS en direct envoyé automatiquement à des contacts de confiance pour qu'ils puissent suivre le déplacement du véhicule sur une carte de bout en bout.
+4. **👁️ Authentification Biométrique :** Connexion via Face ID / Touch ID pour fluidifier l'expérience, et vérification biométrique aléatoire lors des départs pour certifier que la conductrice correspond bien au profil enregistré.
+5. **🏆 Gamification & Sororité :** Un système de fidélité avec des niveaux et des badges (ex: "Super Conductrice", "Ambianceuse", "Ponctuelle") débloquant des avantages exclusifs ou des réductions.
+6. **🚆 Mobilité Multimodale :** Intégration avec les API des transports en commun locaux pour suggérer à l'utilisatrice comment terminer son "dernier kilomètre" une fois déposée par sa conductrice.
 
 ---
 
-## 💡 Notes pour la Démo MVP
-- **Création de compte** : L'inscription est fonctionnelle. Le flux redirige automatiquement vers le mock KYC.
-- **Création et Recherche de trajets** : Tout est interconnecté avec MongoDB ! Ce que vous publiez s'affiche dans les recherches dynamiques.
-- **Bouton SOS** : L'application vous demandera la permission GPS pour utiliser le radar de secours. Vous pouvez copier et partager votre position via le système natif du téléphone.
+## 💻 Comment lancer le projet localement ?
 
-🎉 Bonne soutenance !
+L'application n'étant pas encore déployée en production, voici les instructions pour faire tourner l'application et le serveur en local.
+
+### 1. Démarrer le Backend (API & Serveur)
+
+Ouvrez un terminal, placez-vous dans le dossier `backend/` et suivez ces étapes :
+
+```bash
+cd backend
+npm install
+# Créez un fichier .env à la racine du backend avec vos variables (PORT=5000, MONGO_URI, JWT_SECRET)
+node server.js
+```
+Le serveur devrait indiquer : `🚀 Serveur Co-Elles démarré sur le port 5000`.
+
+### 2. Démarrer le Frontend (Application Mobile)
+
+**Important :** Assurez-vous que l'adresse IP de votre machine locale est bien configurée dans `frontend/services/api.js` (`API_BASE_URL`), par exemple `http://192.168.1.10:5000/api`.
+
+Ouvrez un nouveau terminal, placez-vous dans le dossier `frontend/` et lancez Expo :
+
+```bash
+cd frontend
+npm install
+npx expo start --clear
+```
+
+- **Pour tester sur votre téléphone :** Téléchargez l'application **Expo Go** (iOS/Android), connectez votre téléphone au même réseau Wi-Fi que votre ordinateur, et scannez le QR code affiché dans le terminal.
+- **Pour tester sur émulateur :** Appuyez sur `a` (pour Android) ou `i` (pour iOS) dans le terminal.
+
+---
+
+*Fait avec passion pour redéfinir la mobilité.*
